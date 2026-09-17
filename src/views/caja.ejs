@@ -45,29 +45,31 @@
   <button type="submit" class="btn btn--ghost">Filtrar</button>
 </form>
 
-<table class="ledger">
-  <thead>
-    <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th class="num">Monto</th><th class="num">Saldo</th></tr>
-  </thead>
-  <tbody>
-    <% if (movimientos.length === 0) { %>
-      <tr class="empty-row"><td colspan="5">No hay movimientos con estos filtros.</td></tr>
-    <% } %>
-    <% movimientos.forEach(m => { %>
-      <tr>
-        <td><%= fecha(m.fecha) %></td>
-        <td><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' %></td>
-        <td style="color:var(--ink-soft);">
-          <% if (m.referencia_tipo === 'donacion') { %>Donación #<%= m.referencia_id %>
-          <% } else if (m.referencia_tipo === 'rendimiento_mp') { %>Rendimiento MP #<%= m.referencia_id %>
-          <% } else { %>Egreso #<%= m.referencia_id %><% } %>
-        </td>
-        <td class="money <%= m.tipo %>"><%= m.tipo === 'egreso' ? '-' : '' %><%= moneda(m.monto) %></td>
-        <td class="money"><%= moneda(m.saldo_acumulado) %></td>
-      </tr>
-    <% }) %>
-  </tbody>
-</table>
+<div class="table-wrap">
+  <table class="ledger">
+    <thead>
+      <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th class="num">Monto</th><th class="num">Saldo</th></tr>
+    </thead>
+    <tbody>
+      <% if (movimientos.length === 0) { %>
+        <tr class="empty-row"><td colspan="5">No hay movimientos con estos filtros.</td></tr>
+      <% } %>
+      <% movimientos.forEach(m => { %>
+        <tr>
+          <td><%= fecha(m.fecha) %></td>
+          <td><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' %></td>
+          <td style="color:var(--ink-soft);">
+            <% if (m.referencia_tipo === 'donacion') { %>Donación #<%= m.referencia_id %>
+            <% } else if (m.referencia_tipo === 'rendimiento_mp') { %>Rendimiento MP #<%= m.referencia_id %>
+            <% } else { %>Egreso #<%= m.referencia_id %><% } %>
+          </td>
+          <td class="money <%= m.tipo %>"><%= m.tipo === 'egreso' ? '-' : '' %><%= moneda(m.monto) %></td>
+          <td class="money"><%= moneda(m.saldo_acumulado) %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
 
 <%- include('partials/paginacion') %>
 

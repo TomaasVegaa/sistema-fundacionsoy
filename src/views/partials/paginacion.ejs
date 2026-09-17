@@ -1,11 +1,11 @@
 <% if (typeof totalPaginas !== 'undefined' && totalPaginas > 1) { %>
-  <nav style="display:flex; align-items:center; justify-content:center; gap:8px; margin:24px 0 10px; font-size:13px;">
+  <nav class="pagination-nav">
     <% if (paginaActual > 1) { %>
-      <a href="?<%= Object.entries({...filtros, pagina: paginaActual - 1}).filter(([,v])=>v).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&') %>" class="btn btn--ghost" style="padding:5px 12px; font-size:12px;">← Anterior</a>
+      <a href="?<%= Object.entries({...filtros, pagina: paginaActual - 1}).filter(([,v])=>v).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&') %>" class="btn btn--ghost pagination-btn">← Anterior</a>
     <% } %>
-    <span style="color:var(--ink-soft);">Página <%= paginaActual %> de <%= totalPaginas %></span>
+    <span class="pagination-info">Página <%= paginaActual %> de <%= totalPaginas %></span>
     <% if (paginaActual < totalPaginas) { %>
-      <a href="?<%= Object.entries({...filtros, pagina: paginaActual + 1}).filter(([,v])=>v).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&') %>" class="btn btn--ghost" style="padding:5px 12px; font-size:12px;">Siguiente →</a>
+      <a href="?<%= Object.entries({...filtros, pagina: paginaActual + 1}).filter(([,v])=>v).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&') %>" class="btn btn--ghost pagination-btn">Siguiente →</a>
     <% } %>
   </nav>
 <% } %>

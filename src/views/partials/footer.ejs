@@ -1,5 +1,37 @@
     </div>
   </main>
 </div>
+
+<script>
+  (function() {
+    var toggleBtn = document.getElementById('menuToggle');
+    var closeBtn = document.getElementById('sidebarClose');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+
+    function openDrawer() {
+      if (sidebar) sidebar.classList.add('open');
+      if (overlay) overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    if (toggleBtn) toggleBtn.addEventListener('click', openDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (overlay) overlay.addEventListener('click', closeDrawer);
+
+    // Cerrar el drawer al cambiar el tamaño de ventana a desktop
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 900) {
+        closeDrawer();
+      }
+    });
+  })();
+</script>
 </body>
 </html>

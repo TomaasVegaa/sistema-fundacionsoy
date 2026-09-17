@@ -34,35 +34,37 @@
 
 <div class="section">
   <div class="section__head"><h2>Listado</h2></div>
-  <table class="ledger">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th class="num">Egresos asociados</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (eventos.length === 0) { %>
-        <tr class="empty-row"><td colspan="5">Todavía no se cargó ningún evento.</td></tr>
-      <% } %>
-      <% eventos.forEach(e => { %>
+  <div class="table-wrap">
+    <table class="ledger">
+      <thead>
         <tr>
-          <td><%= fecha(e.fecha) %></td>
-          <td><%= e.nombre %></td>
-          <td style="color:var(--ink-soft);"><%= e.descripcion || '—' %></td>
-          <td class="money egreso"><%= moneda(e.total_egresos) %></td>
-          <td>
-            <form method="POST" action="/eventos/<%= e.id %>/eliminar" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este evento?');">
-              <button type="submit" class="btn btn--ghost" style="padding:4px 8px; font-size:12px; color:var(--rust);">Eliminar</button>
-            </form>
-          </td>
+          <th>Fecha</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th class="num">Egresos asociados</th>
+          <th>Acciones</th>
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% if (eventos.length === 0) { %>
+          <tr class="empty-row"><td colspan="5">Todavía no se cargó ningún evento.</td></tr>
+        <% } %>
+        <% eventos.forEach(e => { %>
+          <tr>
+            <td><%= fecha(e.fecha) %></td>
+            <td><%= e.nombre %></td>
+            <td style="color:var(--ink-soft);"><%= e.descripcion || '—' %></td>
+            <td class="money egreso"><%= moneda(e.total_egresos) %></td>
+            <td>
+              <form method="POST" action="/eventos/<%= e.id %>/eliminar" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este evento?');">
+                <button type="submit" class="btn btn--ghost" style="padding:4px 8px; font-size:12px; color:var(--rust);">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <%- include('../partials/footer') %>

@@ -2,36 +2,97 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title><%= typeof titulo !== 'undefined' ? titulo + ' — Fundación Soy' : 'Fundación Soy' %></title>
   <link rel="stylesheet" href="/public/css/styles.css">
 </head>
 <body>
+<!-- Barra superior móvil -->
+<header class="mobile-bar">
+  <button class="mobile-bar__toggle" id="menuToggle" aria-label="Abrir menú de navegación">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-bar__brand">
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 8h24M4 16h24M4 24h16" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="26" cy="24" r="3" stroke="#f59e0b" stroke-width="2.5"/>
+    </svg>
+    <span>Fundación Soy</span>
+  </div>
+  <% if (typeof usuario !== 'undefined' && usuario) { %>
+    <div class="mobile-bar__user" title="<%= usuario.nombre %>">
+      <%= (usuario.nombre || 'U').charAt(0).toUpperCase() %>
+    </div>
+  <% } else { %>
+    <div style="width:28px;"></div>
+  <% } %>
+</header>
+
+<!-- Overlay para cerrar el menú lateral en móvil -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="app-shell">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar__mark">
-      <svg class="glyph" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 8h24M4 16h24M4 24h16" stroke="#D9B06B" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="26" cy="24" r="3" stroke="#D9B06B" stroke-width="2"/>
-      </svg>
-      <div class="name">Fundación Soy</div>
-      <div class="sub">Facturación &amp; caja</div>
+      <div class="sidebar__mark-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="glyph" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 8h24M4 16h24M4 24h16" stroke="#D9B06B" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="26" cy="24" r="3" stroke="#D9B06B" stroke-width="2"/>
+          </svg>
+          <div>
+            <div class="name">Fundación Soy</div>
+            <div class="sub">Facturación &amp; caja</div>
+          </div>
+        </div>
+        <button class="sidebar__close" id="sidebarClose" aria-label="Cerrar menú">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
     <nav>
-      <a href="/" class="<%= activeNav === 'dashboard' ? 'active' : '' %>">Panel</a>
-      <a href="/donaciones" class="<%= activeNav === 'donaciones' ? 'active' : '' %>">Donaciones</a>
-      <a href="/egresos" class="<%= activeNav === 'egresos' ? 'active' : '' %>">Egresos</a>
-      <a href="/eventos" class="<%= activeNav === 'eventos' ? 'active' : '' %>">Eventos</a>
-      <a href="/caja" class="<%= activeNav === 'caja' ? 'active' : '' %>">Caja</a>
-      <a href="/configuracion" class="<%= activeNav === 'configuracion' ? 'active' : '' %>">Configuración ARCA</a>
+      <a href="/" class="<%= activeNav === 'dashboard' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Panel</span>
+      </a>
+      <a href="/donaciones" class="<%= activeNav === 'donaciones' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        <span>Donaciones</span>
+      </a>
+      <a href="/egresos" class="<%= activeNav === 'egresos' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Egresos</span>
+      </a>
+      <a href="/eventos" class="<%= activeNav === 'eventos' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <span>Eventos</span>
+      </a>
+      <a href="/caja" class="<%= activeNav === 'caja' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+        <span>Caja</span>
+      </a>
+      <a href="/configuracion" class="<%= activeNav === 'configuracion' ? 'active' : '' %>">
+        <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Configuración ARCA</span>
+      </a>
     </nav>
     <div class="sidebar__foot">
       <% if (typeof usuario !== 'undefined' && usuario) { %>
-        <div style="margin-bottom:8px; font-size:12px; color:#b7c0cb;">
+        <div style="margin-bottom:8px; font-size:13px; font-weight:500; color:#e2e8f0;">
           <%= usuario.nombre %>
         </div>
         <form method="POST" action="/logout" style="margin:0;">
-          <button type="submit" style="background:none; border:none; color:#9aa6b3; cursor:pointer; font-size:11.5px; padding:0; font-family:var(--sans);">Cerrar sesión</button>
+          <button type="submit" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:12px; padding:0; font-family:var(--sans); display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Cerrar sesión</span>
+          </button>
         </form>
       <% } else { %>
         Fase 1 · Archivo semanal MP

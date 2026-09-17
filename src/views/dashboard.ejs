@@ -68,21 +68,23 @@
   <% } %>
 
   <% if (pendientes.length > 0) { %>
-    <table class="ledger" style="margin-bottom:18px;">
-      <thead>
-        <tr><th>Fecha</th><th>Donante</th><th class="num">Monto</th><th>Estado</th></tr>
-      </thead>
-      <tbody>
-        <% pendientes.forEach(p => { %>
-          <tr>
-            <td><%= fecha(p.fecha) %></td>
-            <td><%= p.donante_nombre || 'Sin identificar' %></td>
-            <td class="money"><%= moneda(p.monto) %></td>
-            <td><span class="estado estado--pendiente">Pendiente de facturar</span></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+    <div class="table-wrap" style="margin-bottom:14px;">
+      <table class="ledger">
+        <thead>
+          <tr><th>Fecha</th><th>Donante</th><th class="num">Monto</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <% pendientes.forEach(p => { %>
+            <tr>
+              <td><%= fecha(p.fecha) %></td>
+              <td><%= p.donante_nombre || 'Sin identificar' %></td>
+              <td class="money"><%= moneda(p.monto) %></td>
+              <td><span class="estado estado--pendiente">Pendiente de facturar</span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
     <a href="/donaciones" class="link" style="font-size:13px; color:var(--gold); text-decoration:none;">Ver todas las donaciones pendientes</a>
   <% } %>
 

@@ -37,6 +37,7 @@ html, body {
   font-family: var(--sans);
   font-size: 15px;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 
 a { color: inherit; }
@@ -44,6 +45,115 @@ a { color: inherit; }
 .app-shell {
   display: flex;
   min-height: 100vh;
+}
+
+/* ---------- Mobile Bar & Navigation Drawer ---------- */
+
+.mobile-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 58px;
+  padding: 0 16px;
+  background: var(--navy-deep);
+  color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.mobile-bar__toggle {
+  background: none;
+  border: none;
+  color: #ffffff;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  margin-left: -4px;
+  min-width: 44px;
+  min-height: 44px;
+}
+.mobile-bar__toggle:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.mobile-bar__user {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar__close {
+  display: none;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 6px;
+}
+.sidebar__close:hover,
+.sidebar__close:active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__mark-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+.sidebar nav a:hover .nav-icon,
+.sidebar nav a.active .nav-icon {
+  opacity: 1;
 }
 
 /* ---------- Sidebar ---------- */
@@ -73,7 +183,7 @@ a { color: inherit; }
   width: 30px;
   height: 30px;
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .sidebar__mark .name {
@@ -210,9 +320,10 @@ a { color: inherit; }
 /* ---------- Franja de cifras (dashboard) ---------- */
 
 .figures {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 34px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 30px;
 }
 
 .figures__item {
@@ -477,26 +588,232 @@ td.money.egreso { color: var(--rust); font-weight: 500; }
 .legend i.ingreso { background: var(--sage); }
 .legend i.egreso { background: var(--rust); }
 
+/* ---------- Table Responsive Wrap ---------- */
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 24px;
+  background: #ffffff;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.table-wrap table.ledger {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 600px;
+  margin-bottom: 0;
+}
+
+/* ---------- Paginacion Responsive ---------- */
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 28px 0 14px;
+  font-size: 13.5px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pagination-info {
+  color: var(--ink-soft);
+  font-weight: 500;
+  padding: 0 4px;
+}
+
 /* ---------- Responsive ---------- */
 
-@media (max-width: 760px) {
-  .app-shell { flex-direction: column; }
-  .sidebar {
-    width: auto;
-    flex-direction: row;
-    align-items: center;
-    padding: 12px 16px;
-    overflow-x: auto;
+@media (max-width: 900px) {
+  .mobile-bar {
+    display: flex;
   }
-  .sidebar__mark, .sidebar__foot { display: none; }
-  .sidebar nav { flex-direction: row; }
-  .sidebar nav a { border-left: none; border-bottom: 2px solid transparent; white-space: nowrap; }
-  .sidebar nav a.active { border-left: none; border-bottom-color: var(--gold-soft); }
-  .main__inner { padding: 26px 18px 60px; }
-  .figures { flex-direction: column; }
-  .figures__item { border-left: none; border-top: 1px solid var(--paper-line); }
-  .figures__item:first-child { border-top: none; }
-  .field-row { flex-direction: column; gap: 0; }
+
+  .sidebar-overlay {
+    display: block;
+  }
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 999;
+    box-shadow: none;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar nav a {
+    padding: 13px 24px;
+    font-size: 15px;
+    min-height: 46px; /* Touch target >= 44px */
+  }
+
+  .main__inner {
+    padding: 24px 20px 60px;
+    max-width: 100%;
+  }
+
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .page-head > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .page-head .btn,
+  .page-head form,
+  .page-head form .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .figures {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .bars {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .bars__month {
+    min-width: 46px;
+  }
+}
+
+@media (max-width: 640px) {
+  .main__inner {
+    padding: 18px 14px 60px;
+  }
+
+  .page-head h1 {
+    font-size: 24px;
+  }
+
+  .figures {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .figures__value {
+    font-size: 22px;
+  }
+
+  .field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    background: #ffffff;
+    border: 1px solid var(--paper-line);
+    padding: 16px;
+    border-radius: var(--radius);
+    gap: 14px;
+  }
+
+  .filters .field {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .filters button[type="submit"] {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .form-card {
+    padding: 20px 16px;
+    max-width: 100%;
+  }
+
+  .form-card button[type="submit"] {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .btn {
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .pagination-nav {
+    justify-content: space-between;
+  }
+  .pagination-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .pagination-info {
+    width: 100%;
+    text-align: center;
+    order: -1;
+    margin-bottom: 6px;
+  }
+
+  /* Asegurar que las tablas no rompan el viewport horizontal si no tienen wrap */
+  table.ledger {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap table.ledger {
+    display: table;
+    min-width: 540px;
+    overflow-x: visible;
+  }
 }
 
 :focus-visible {
