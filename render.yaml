@@ -2,7 +2,7 @@ services:
   - type: web
     name: fundacion-soy-sistema
     env: node
-    plan: starter
+    plan: free
     buildCommand: npm install && npm run migrate
     startCommand: npm start
     envVars:
@@ -10,6 +10,8 @@ services:
         fromDatabase:
           name: fundacion-soy-db
           property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
       - key: ARCA_AMBIENTE
         value: mock
       - key: ARCA_CBTE_TIPO_DEFAULT
@@ -17,4 +19,4 @@ services:
 
 databases:
   - name: fundacion-soy-db
-    plan: starter
+    plan: free

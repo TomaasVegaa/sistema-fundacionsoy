@@ -1,13 +1,12 @@
 // Carga datos de prueba: eventos, egresos y un usuario admin.
 require('dotenv').config();
-const { Pool } = require('pg');
 const dayjs = require('dayjs');
 const bcrypt = require('bcrypt');
+const pool = require('../src/db/pool');
 
 const SALT_ROUNDS = 12;
 
 async function main() {
-  const pool = new Pool();
   try {
     // --- Usuario admin por defecto ---
     const passwordHash = await bcrypt.hash('admin123', SALT_ROUNDS);
