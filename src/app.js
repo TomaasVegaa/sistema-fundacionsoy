@@ -21,6 +21,9 @@ const exportarRoutes = require('./routes/exportar');
 
 const app = express();
 
+// Confiar en el reverse proxy de Render (necesario para cookies seguras por HTTPS)
+app.set('trust proxy', 1);
+
 // --- Seguridad ---
 app.use(helmet({
   contentSecurityPolicy: {
@@ -63,15 +66,16 @@ app.use(session({
   store: new pgSession({
     pool,
     tableName: 'session',
-    createTableIfMissing: false, // la tabla se crea en schema.sql
+    createTableIfMissing: true,
   }),
   secret: process.env.SESSION_SECRET || 'fundacion-soy-dev-secret-cambiar-en-produccion',
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
     maxAge: 24 * 60 * 60 * 1000, // 24 horas
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: 'auto',
     sameSite: 'lax',
   },
 }));

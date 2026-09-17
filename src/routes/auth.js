@@ -45,7 +45,13 @@ router.post('/login', async (req, res) => {
         email: usuario.email,
         rol: usuario.rol,
       };
-      res.redirect('/');
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Error guardando sesion en store:', saveErr);
+          return res.render('login', { error: 'Error interno, intentá de nuevo.', activeNav: null });
+        }
+        res.redirect('/');
+      });
     });
   } catch (err) {
     console.error('Error en login:', err);
