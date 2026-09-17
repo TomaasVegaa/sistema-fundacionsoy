@@ -3,7 +3,7 @@ services:
     name: fundacion-soy-sistema
     env: node
     plan: free
-    buildCommand: npm install && npm run migrate
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: DATABASE_URL

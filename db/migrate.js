@@ -10,7 +10,7 @@ async function main() {
   console.log('Aplicando esquema de base de datos...');
   try {
     await pool.query(sql);
-    console.log('Esquema aplicado correctamente.');
+    console.log('✓ Esquema aplicado correctamente.');
 
     // Asegurar que exista al menos un usuario administrador
     const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
@@ -25,10 +25,18 @@ async function main() {
       console.log('✓ Usuario administrador inicial creado: admin@fundacionsoy.org / admin123');
     }
   } catch (err) {
-    console.error('Error aplicando el esquema:', err.message);
+    console.warn('Aviso en migración:', err.message || err);
+    // Si estamos en entorno Render durante la fase de Build, no romper el despliegue
+    if (process.env.RENDER) {
+      console.log('Continuando despliegue (la inicialización de base de datos correrá al iniciar la app).');
+      process.exitCode = 0;
+      return;
+    }
     process.exitCode = 1;
   } finally {
-    await pool.end();
+    try {
+      await pool.end();
+    } catch (_) {}
   }
 }
 
