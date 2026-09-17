@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión — Fundación Soy</title>
+  <link rel="stylesheet" href="/public/css/styles.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div style="width:100%; max-width:380px; padding:20px;">
+    <div style="text-align:center; margin-bottom:32px;">
+      <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 8h24M4 16h24M4 24h16" stroke="#a8752f" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="26" cy="24" r="3" stroke="#a8752f" stroke-width="2"/>
+      </svg>
+      <h1 style="font-family:var(--serif); font-size:24px; margin:10px 0 4px;">Fundación Soy</h1>
+      <p style="color:var(--ink-soft); font-size:13px; margin:0;">Facturación & caja</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="aviso" style="margin-bottom:18px;"><%= error %></div>
+    <% } %>
+
+    <form class="form-card" method="POST" action="/login" style="max-width:100%;">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" required autofocus placeholder="admin@fundacionsoy.org">
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input type="password" name="password" id="password" required>
+      </div>
+      <button type="submit" class="btn btn--gold" style="width:100%; justify-content:center;">Iniciar sesión</button>
+    </form>
+  </div>
+</body>
+</html>

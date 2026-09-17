@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Entorno y credenciales
+.env
+.env.local
+.env.production
+secrets/
+
+# Archivos subidos y generados
+uploads/
+storage/
+*.log
+
+# Archivos PDF (extractos bancarios, facturas generadas)
+*.pdf
+
+# Scripts temporales de prueba
+src/scratch_*.js
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

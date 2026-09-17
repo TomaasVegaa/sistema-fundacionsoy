@@ -1,0 +1,63 @@
+<%- include('../partials/header', { titulo: 'Donaciones', activeNav }) %>
+
+<div class="page-head">
+  <div>
+    <h1>Donaciones</h1>
+    <p>Donaciones importadas desde Mercado Pago y su estado de facturación.</p>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a href="/exportar/donaciones" class="btn btn--ghost">Exportar a Excel</a>
+    <form method="POST" action="/donaciones/procesar-lote">
+      <button type="submit" class="btn btn--ghost">Facturar pendientes</button>
+    </form>
+    <a href="/donaciones/importar" class="btn btn--gold">Importar archivo</a>
+  </div>
+</div>
+
+<table class="ledger">
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Donante</th>
+      <th>Tipo</th>
+      <th class="num">Monto</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (donaciones.length === 0) { %>
+      <tr class="empty-row"><td colspan="6">Todavía no se importó ninguna donación. Empezá subiendo el archivo semanal de Mercado Pago.</td></tr>
+    <% } %>
+    <% donaciones.forEach(d => { %>
+      <tr>
+        <td><%= fecha(d.fecha) %></td>
+        <td><%= d.donante_nombre || 'Sin identificar' %></td>
+        <td><%= d.tipo === 'donacion_recurrente' ? 'Recurrente' : 'Puntual' %></td>
+        <td class="money"><%= moneda(d.monto) %></td>
+        <td>
+          <% if (d.estado === 'facturada') { %>
+            <span class="estado estado--facturada">Facturada</span>
+          <% } else if (d.estado === 'error_facturacion') { %>
+            <span class="estado estado--error">Error de ARCA</span>
+          <% } else { %>
+            <span class="estado estado--pendiente">Pendiente</span>
+          <% } %>
+        </td>
+        <td>
+          <% if (d.estado === 'facturada') { %>
+            <a href="/donaciones/<%= d.id %>/factura.pdf" class="btn btn--ghost" style="padding:4px 9px; font-size:12px;" target="_blank" title="Ver Factura en PDF">PDF</a>
+          <% } else if (d.estado === 'error_facturacion') { %>
+            <form method="POST" action="/donaciones/<%= d.id %>/reintentar" style="display:inline;">
+              <button type="submit" class="btn btn--ghost" style="padding:4px 9px; font-size:12px;">Reintentar</button>
+            </form>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%- include('../partials/paginacion') %>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,74 @@
+<%- include('partials/header', { titulo: 'Caja', activeNav }) %>
+
+<div class="page-head">
+  <div>
+    <h1>Caja</h1>
+    <p>Movimientos de ingresos y egresos, en orden cronológico.</p>
+  </div>
+  <div>
+    <a href="/exportar/caja?<%= Object.entries(filtros || {}).filter(([k,v])=>v && k!=='pagina').map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&') %>" class="btn btn--ghost">Exportar a Excel</a>
+  </div>
+</div>
+
+<div class="figures">
+  <div class="figures__item">
+    <div class="figures__label">Saldo actual</div>
+    <div class="figures__value"><%= moneda(saldoActual) %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Ingresos en el período</div>
+    <div class="figures__value sage"><%= moneda(totales.total_ingresos) %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Egresos en el período</div>
+    <div class="figures__value rust"><%= moneda(totales.total_egresos) %></div>
+  </div>
+</div>
+
+<form class="filters" method="GET" action="/caja">
+  <div class="field">
+    <label for="tipo">Tipo</label>
+    <select name="tipo" id="tipo">
+      <option value="">Todos</option>
+      <option value="ingreso" <%= filtros.tipo === 'ingreso' ? 'selected' : '' %>>Ingresos</option>
+      <option value="egreso" <%= filtros.tipo === 'egreso' ? 'selected' : '' %>>Egresos</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="desde">Desde</label>
+    <input type="date" name="desde" id="desde" value="<%= filtros.desde || '' %>">
+  </div>
+  <div class="field">
+    <label for="hasta">Hasta</label>
+    <input type="date" name="hasta" id="hasta" value="<%= filtros.hasta || '' %>">
+  </div>
+  <button type="submit" class="btn btn--ghost">Filtrar</button>
+</form>
+
+<table class="ledger">
+  <thead>
+    <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th class="num">Monto</th><th class="num">Saldo</th></tr>
+  </thead>
+  <tbody>
+    <% if (movimientos.length === 0) { %>
+      <tr class="empty-row"><td colspan="5">No hay movimientos con estos filtros.</td></tr>
+    <% } %>
+    <% movimientos.forEach(m => { %>
+      <tr>
+        <td><%= fecha(m.fecha) %></td>
+        <td><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' %></td>
+        <td style="color:var(--ink-soft);">
+          <% if (m.referencia_tipo === 'donacion') { %>Donación #<%= m.referencia_id %>
+          <% } else if (m.referencia_tipo === 'rendimiento_mp') { %>Rendimiento MP #<%= m.referencia_id %>
+          <% } else { %>Egreso #<%= m.referencia_id %><% } %>
+        </td>
+        <td class="money <%= m.tipo %>"><%= m.tipo === 'egreso' ? '-' : '' %><%= moneda(m.monto) %></td>
+        <td class="money"><%= moneda(m.saldo_acumulado) %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%- include('partials/paginacion') %>
+
+<%- include('partials/footer') %>

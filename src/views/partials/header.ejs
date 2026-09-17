@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof titulo !== 'undefined' ? titulo + ' — Fundación Soy' : 'Fundación Soy' %></title>
+  <link rel="stylesheet" href="/public/css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar__mark">
+      <svg class="glyph" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 8h24M4 16h24M4 24h16" stroke="#D9B06B" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="26" cy="24" r="3" stroke="#D9B06B" stroke-width="2"/>
+      </svg>
+      <div class="name">Fundación Soy</div>
+      <div class="sub">Facturación &amp; caja</div>
+    </div>
+    <nav>
+      <a href="/" class="<%= activeNav === 'dashboard' ? 'active' : '' %>">Panel</a>
+      <a href="/donaciones" class="<%= activeNav === 'donaciones' ? 'active' : '' %>">Donaciones</a>
+      <a href="/egresos" class="<%= activeNav === 'egresos' ? 'active' : '' %>">Egresos</a>
+      <a href="/eventos" class="<%= activeNav === 'eventos' ? 'active' : '' %>">Eventos</a>
+      <a href="/caja" class="<%= activeNav === 'caja' ? 'active' : '' %>">Caja</a>
+      <a href="/configuracion" class="<%= activeNav === 'configuracion' ? 'active' : '' %>">Configuración ARCA</a>
+    </nav>
+    <div class="sidebar__foot">
+      <% if (typeof usuario !== 'undefined' && usuario) { %>
+        <div style="margin-bottom:8px; font-size:12px; color:#b7c0cb;">
+          <%= usuario.nombre %>
+        </div>
+        <form method="POST" action="/logout" style="margin:0;">
+          <button type="submit" style="background:none; border:none; color:#9aa6b3; cursor:pointer; font-size:11.5px; padding:0; font-family:var(--sans);">Cerrar sesión</button>
+        </form>
+      <% } else { %>
+        Fase 1 · Archivo semanal MP
+      <% } %>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="main__inner">

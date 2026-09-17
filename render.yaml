@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: fundacion-soy-sistema
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run migrate
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fundacion-soy-db
+          property: connectionString
+      - key: ARCA_AMBIENTE
+        value: mock
+      - key: ARCA_CBTE_TIPO_DEFAULT
+        value: "11"
+
+databases:
+  - name: fundacion-soy-db
+    plan: starter

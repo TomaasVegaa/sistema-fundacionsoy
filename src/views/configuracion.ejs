@@ -1,0 +1,66 @@
+<%- include('partials/header', { titulo: 'Configuración ARCA', activeNav }) %>
+
+<div class="page-head">
+  <div>
+    <h1>Configuración ARCA</h1>
+    <p>Datos necesarios para emitir Factura C. Mientras no haya certificado, el sistema factura en modo simulado.</p>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div style="background:#fdf2f2; border:1px solid #f8b4b4; color:#9b1c1c; padding:12px 16px; border-radius:6px; margin-bottom:20px; font-size:14px;">
+    <%= error %>
+  </div>
+<% } %>
+
+<% if (typeof guardado !== 'undefined' && guardado) { %>
+  <div style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:12px 16px; border-radius:6px; margin-bottom:20px; font-size:14px;">
+    ✓ Configuración guardada correctamente.
+  </div>
+<% } %>
+
+<% if (config.ambiente === 'mock') { %>
+  <div class="aviso">
+    El sistema está en modo <strong>simulado (mock)</strong>: genera CAE ficticios para poder probar
+    todo el flujo. Cuando tengas el certificado, la clave privada y el punto de venta reales, cambiá
+    el ambiente a "Homologación" para probar contra el entorno de testing de ARCA antes de pasar a producción.
+  </div>
+<% } %>
+
+<form class="form-card" method="POST" action="/configuracion">
+  <div class="field">
+    <label for="ambiente">Ambiente</label>
+    <select name="ambiente" id="ambiente">
+      <option value="mock" <%= config.ambiente === 'mock' ? 'selected' : '' %>>Simulado (mock)</option>
+      <option value="homologacion" <%= config.ambiente === 'homologacion' ? 'selected' : '' %>>Homologación (testing ARCA)</option>
+      <option value="produccion" <%= config.ambiente === 'produccion' ? 'selected' : '' %>>Producción</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label for="cuit_emisor">CUIT de la fundación</label>
+      <input type="text" name="cuit_emisor" id="cuit_emisor" value="<%= config.cuit_emisor || '' %>" placeholder="30-XXXXXXXX-X">
+    </div>
+    <div class="field">
+      <label for="punto_venta">Punto de venta</label>
+      <input type="number" name="punto_venta" id="punto_venta" value="<%= config.punto_venta || '' %>">
+    </div>
+  </div>
+  <div class="field">
+    <label for="cbte_tipo_default">Tipo de comprobante</label>
+    <input type="number" name="cbte_tipo_default" id="cbte_tipo_default" value="<%= config.cbte_tipo_default || 11 %>">
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label for="certificado_path">Ruta del certificado (.crt)</label>
+      <input type="text" name="certificado_path" id="certificado_path" value="<%= config.certificado_path || '' %>" placeholder="./secrets/arca.crt">
+    </div>
+    <div class="field">
+      <label for="clave_privada_path">Ruta de la clave privada (.key)</label>
+      <input type="text" name="clave_privada_path" id="clave_privada_path" value="<%= config.clave_privada_path || '' %>" placeholder="./secrets/arca.key">
+    </div>
+  </div>
+  <button type="submit" class="btn btn--gold">Guardar configuración</button>
+</form>
+
+<%- include('partials/footer') %>

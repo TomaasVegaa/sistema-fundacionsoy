@@ -1,0 +1,96 @@
+<%- include('partials/header', { titulo: 'Panel', activeNav }) %>
+
+<div class="page-head">
+  <div>
+    <h1>Panel</h1>
+    <p>Estado general de donaciones, facturación y caja.</p>
+  </div>
+  <a href="/donaciones/importar" class="btn btn--gold">Importar archivo de MP</a>
+</div>
+
+<div class="figures">
+  <div class="figures__item">
+    <div class="figures__label">Saldo de caja</div>
+    <div class="figures__value"><%= moneda(saldoActual) %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Total donado (facturado)</div>
+    <div class="figures__value sage"><%= moneda(resumen.total_donado) %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Donantes distintos</div>
+    <div class="figures__value"><%= resumen.cantidad_donantes %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Facturas pendientes</div>
+    <div class="figures__value gold"><%= resumen.facturas_pendientes %></div>
+  </div>
+  <div class="figures__item">
+    <div class="figures__label">Facturas con error</div>
+    <div class="figures__value rust"><%= resumen.facturas_error %></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section__head">
+    <h2>Ingresos vs. egresos, últimos meses</h2>
+  </div>
+  <% if (serieMensual.length === 0) { %>
+    <p style="color:var(--ink-soft); font-size:14px;">Todavía no hay movimientos de caja para graficar.</p>
+  <% } else {
+    const max = Math.max(1, ...serieMensual.map(m => Math.max(Number(m.ingresos), Number(m.egresos))));
+  %>
+  <div class="bars">
+    <% serieMensual.forEach(m => { %>
+      <div class="bars__month">
+        <div class="bars__pair">
+          <div class="bars__bar ingreso" style="height: <%= Math.round((Number(m.ingresos)/max)*130) %>px" title="Ingresos <%= moneda(m.ingresos) %>"></div>
+          <div class="bars__bar egreso" style="height: <%= Math.round((Number(m.egresos)/max)*130) %>px" title="Egresos <%= moneda(m.egresos) %>"></div>
+        </div>
+        <div class="bars__label"><%= dayjs(m.mes + '-01').format('MMM YY') %></div>
+      </div>
+    <% }) %>
+  </div>
+  <div class="legend">
+    <span><i class="ingreso"></i> Ingresos (donaciones facturadas)</span>
+    <span><i class="egreso"></i> Egresos</span>
+  </div>
+  <% } %>
+</div>
+
+<div class="section">
+  <div class="section__head">
+    <h2>Acciones pendientes</h2>
+  </div>
+
+  <% if (pendientes.length === 0 && errores.length === 0) { %>
+    <p style="color:var(--ink-soft); font-size:14px;">No hay donaciones pendientes ni facturas con error. Todo al día.</p>
+  <% } %>
+
+  <% if (pendientes.length > 0) { %>
+    <table class="ledger" style="margin-bottom:18px;">
+      <thead>
+        <tr><th>Fecha</th><th>Donante</th><th class="num">Monto</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        <% pendientes.forEach(p => { %>
+          <tr>
+            <td><%= fecha(p.fecha) %></td>
+            <td><%= p.donante_nombre || 'Sin identificar' %></td>
+            <td class="money"><%= moneda(p.monto) %></td>
+            <td><span class="estado estado--pendiente">Pendiente de facturar</span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <a href="/donaciones" class="link" style="font-size:13px; color:var(--gold); text-decoration:none;">Ver todas las donaciones pendientes</a>
+  <% } %>
+
+  <% if (errores.length > 0) { %>
+    <div class="aviso" style="margin-top:20px;">
+      Hay <%= errores.length %> factura(s) con error de ARCA. Revisá el detalle en la sección de Donaciones.
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

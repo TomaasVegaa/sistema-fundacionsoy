@@ -1,0 +1,68 @@
+<%- include('../partials/header', { titulo: 'Eventos', activeNav }) %>
+
+<div class="page-head">
+  <div>
+    <h1>Eventos</h1>
+    <p>Eventos benéficos y el total de gastos asociado a cada uno.</p>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div style="background:#fdf2f2; border:1px solid #f8b4b4; color:#9b1c1c; padding:12px 16px; border-radius:6px; margin-bottom:20px; font-size:14px;">
+    <%= error %>
+  </div>
+<% } %>
+
+<div class="section">
+  <div class="section__head"><h2>Nuevo evento</h2></div>
+  <form class="form-card" method="POST" action="/eventos">
+    <div class="field">
+      <label for="nombre">Nombre</label>
+      <input type="text" name="nombre" id="nombre" placeholder="Ej: Cena a beneficio 2026" required>
+    </div>
+    <div class="field">
+      <label for="fecha">Fecha</label>
+      <input type="date" name="fecha" id="fecha">
+    </div>
+    <div class="field">
+      <label for="descripcion">Descripción</label>
+      <textarea name="descripcion" id="descripcion"></textarea>
+    </div>
+    <button type="submit" class="btn btn--gold">Crear evento</button>
+  </form>
+</div>
+
+<div class="section">
+  <div class="section__head"><h2>Listado</h2></div>
+  <table class="ledger">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th class="num">Egresos asociados</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (eventos.length === 0) { %>
+        <tr class="empty-row"><td colspan="5">Todavía no se cargó ningún evento.</td></tr>
+      <% } %>
+      <% eventos.forEach(e => { %>
+        <tr>
+          <td><%= fecha(e.fecha) %></td>
+          <td><%= e.nombre %></td>
+          <td style="color:var(--ink-soft);"><%= e.descripcion || '—' %></td>
+          <td class="money egreso"><%= moneda(e.total_egresos) %></td>
+          <td>
+            <form method="POST" action="/eventos/<%= e.id %>/eliminar" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este evento?');">
+              <button type="submit" class="btn btn--ghost" style="padding:4px 8px; font-size:12px; color:var(--rust);">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>
