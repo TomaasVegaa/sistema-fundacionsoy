@@ -10,27 +10,33 @@ router.get('/login', (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const identificador = (req.body.usuario || req.body.email || '').trim().toLowerCase();
+  const password = req.body.password;
 
-  if (!email || !password) {
-    return res.render('login', { error: 'Completá email y contraseña.', activeNav: null });
+  if (!identificador || !password) {
+    return res.render('login', { error: 'Completá tu usuario y contraseña.', activeNav: null });
   }
 
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM usuarios WHERE email = $1 AND activo = TRUE',
-      [email.trim().toLowerCase()]
+      `SELECT * FROM usuarios
+       WHERE (LOWER(email) = $1
+           OR LOWER(email) = $1 || '@fundacionsoy.org'
+           OR LOWER(nombre) = $1)
+         AND activo = TRUE
+       LIMIT 1`,
+      [identificador]
     );
 
     if (rows.length === 0) {
-      return res.render('login', { error: 'Email o contraseña incorrectos.', activeNav: null });
+      return res.render('login', { error: 'Usuario o contraseña incorrectos.', activeNav: null });
     }
 
     const usuario = rows[0];
     const match = await bcrypt.compare(password, usuario.password_hash);
 
     if (!match) {
-      return res.render('login', { error: 'Email o contraseña incorrectos.', activeNav: null });
+      return res.render('login', { error: 'Usuario o contraseña incorrectos.', activeNav: null });
     }
 
     // Regenerar sesion para prevenir session fixation

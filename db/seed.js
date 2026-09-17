@@ -9,14 +9,14 @@ const SALT_ROUNDS = 12;
 async function main() {
   try {
     // --- Usuario admin por defecto ---
-    const passwordHash = await bcrypt.hash('admin123', SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash('fundacionsoy123', SALT_ROUNDS);
     await pool.query(
       `INSERT INTO usuarios (nombre, email, password_hash, rol)
-       VALUES ($1, $2, $3, 'admin')
-       ON CONFLICT (email) DO NOTHING`,
-      ['Administrador', 'admin@fundacionsoy.org', passwordHash]
+       VALUES ('fundacionsoy', 'fundacionsoy@fundacionsoy.org', $1, 'admin')
+       ON CONFLICT (email) DO UPDATE SET password_hash = $1, nombre = 'fundacionsoy'`,
+      [passwordHash]
     );
-    console.log('Usuario admin creado: admin@fundacionsoy.org / admin123');
+    console.log('Usuario configurado: fundacionsoy / fundacionsoy123');
 
     // --- Evento de ejemplo ---
     const evento = await pool.query(

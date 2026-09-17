@@ -13,17 +13,14 @@ async function main() {
     console.log('✓ Esquema aplicado correctamente.');
 
     // Asegurar que exista al menos un usuario administrador
-    const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
-    if (userCount.rows[0].total === 0) {
-      const passwordHash = await bcrypt.hash('admin123', 12);
-      await pool.query(
-        `INSERT INTO usuarios (nombre, email, password_hash, rol)
-         VALUES ($1, $2, $3, 'admin')
-         ON CONFLICT (email) DO NOTHING`,
-        ['Administrador', 'admin@fundacionsoy.org', passwordHash]
-      );
-      console.log('✓ Usuario administrador inicial creado: admin@fundacionsoy.org / admin123');
-    }
+    const passwordHash = await bcrypt.hash('fundacionsoy123', 12);
+    await pool.query(
+      `INSERT INTO usuarios (nombre, email, password_hash, rol)
+       VALUES ('fundacionsoy', 'fundacionsoy@fundacionsoy.org', $1, 'admin')
+       ON CONFLICT (email) DO UPDATE SET password_hash = $1, nombre = 'fundacionsoy'`,
+      [passwordHash]
+    );
+    console.log('✓ Usuario configurado: fundacionsoy / fundacionsoy123');
   } catch (err) {
     console.warn('Aviso en migración:', err.message || err);
     // Si estamos en entorno Render durante la fase de Build, no romper el despliegue

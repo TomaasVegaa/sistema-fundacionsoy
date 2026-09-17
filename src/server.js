@@ -14,17 +14,15 @@ async function inicializarBaseDeDatos() {
       await pool.query(sql);
       console.log('✓ Esquema de base de datos verificado.');
 
-      const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
-      if (userCount.rows[0].total === 0) {
-        const passwordHash = await bcrypt.hash('admin123', 12);
-        await pool.query(
-          `INSERT INTO usuarios (nombre, email, password_hash, rol)
-           VALUES ($1, $2, $3, 'admin')
-           ON CONFLICT (email) DO NOTHING`,
-          ['Administrador', 'admin@fundacionsoy.org', passwordHash]
-        );
-        console.log('✓ Usuario administrador verificado/creado: admin@fundacionsoy.org / admin123');
-      }
+      // Crear o actualizar usuario fundacionsoy con contraseña fundacionsoy123
+      const passwordHash = await bcrypt.hash('fundacionsoy123', 12);
+      await pool.query(
+        `INSERT INTO usuarios (nombre, email, password_hash, rol)
+         VALUES ('fundacionsoy', 'fundacionsoy@fundacionsoy.org', $1, 'admin')
+         ON CONFLICT (email) DO UPDATE SET password_hash = $1, nombre = 'fundacionsoy'`,
+        [passwordHash]
+      );
+      console.log('✓ Usuario fundacionsoy configurado: fundacionsoy / fundacionsoy123');
     }
   } catch (err) {
     console.error('Aviso al verificar base de datos al inicio:', err.message || err);
