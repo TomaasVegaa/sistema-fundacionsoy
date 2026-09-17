@@ -37,11 +37,11 @@ app.use(helmet({
   },
 }));
 
-// --- Rate limiting en login ---
+// --- Rate limiting en login (solo para intentos de envio POST) ---
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // maximo 10 intentos por IP
-  message: 'Demasiados intentos de login. Intentá de nuevo en 15 minutos.',
+  max: 100, // limite amplio para pruebas y uso normal
+  message: 'Demasiados intentos de login. Intentá de nuevo en unos minutos.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -81,7 +81,7 @@ app.use(session({
 }));
 
 // --- Rutas publicas (login) ---
-app.use('/login', loginLimiter);
+app.post('/login', loginLimiter);
 app.use('/', authRoutes);
 
 // --- Middleware de autenticacion (protege todo lo demas) ---
