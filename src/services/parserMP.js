@@ -15,27 +15,185 @@ const pdfParse = require('pdf-parse');
 
 // ---- CSV / XLSX ----
 
-const COLUMN_ALIASES = {
-  fecha: ['fecha', 'date', 'fecha de aprobacion', 'release_date'],
-  monto: ['monto', 'amount', 'transaction_amount', 'importe', 'valor'],
-  referencia: ['referencia', 'id', 'payment_id', 'external_reference', 'source_id', 'id de la operación', 'id de la operacion'],
-  pagador_nombre: ['pagador', 'payer_name', 'nombre', 'payer.first_name', 'descripción', 'descripcion'],
-  pagador_email: ['email', 'payer_email', 'payer.email'],
-  pagador_cuit_dni: ['cuit', 'dni', 'payer_identification', 'payer.identification.number', 'cuit/ cuil'],
-  tipo: ['tipo', 'payment_type', 'type'],
-  estado_origen: ['estado', 'status', 'payment_status'],
-};
-
-function normalizarHeader(h) {
-  return String(h || '').trim().toLowerCase();
+function normalizarTexto(t) {
+  return String(t || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Elimina tildes y diacríticos
+    .replace(/[^a-z0-9\s]/g, ' ')   // Convierte puntuación a espacios
+    .replace(/\s+/g, ' ')           // Unifica espacios múltiples
+    .trim();
 }
 
-function encontrarValor(fila, alias) {
+const COLUMN_ALIASES = {
+  fecha: [
+    'fecha de aprobacion',
+    'fecha de aprobacion de la operacion',
+    'fecha de origen',
+    'fecha de creacion',
+    'fecha de la operacion',
+    'fecha de liquidacion del dinero',
+    'fecha de liquidacion',
+    'fecha operacion',
+    'fecha',
+    'date',
+    'date_created',
+    'date_approved',
+    'release_date',
+    'creation_date',
+  ],
+  monto: [
+    'valor de la compra',
+    'transaction_amount',
+    'monto bruto',
+    'monto de la operacion',
+    'monto total',
+    'importe total',
+    'monto',
+    'amount',
+    'importe',
+    'valor',
+    'total',
+    'monto neto de la operacion',
+    'net_amount',
+  ],
+  referencia: [
+    'id de operacion en mercado pago',
+    'id de la operacion',
+    'id de operacion',
+    'id operacion',
+    'numero de operacion',
+    'nro de operacion',
+    'nro operacion',
+    'payment_id',
+    'source_id',
+    'external_reference',
+    'referencia',
+    'operation_id',
+    'id',
+  ],
+  pagador_nombre: [
+    'nombre del comprador',
+    'nombre de comprador',
+    'nombre del pagador',
+    'nombre del titular',
+    'nombre del donante',
+    'nombre y apellido',
+    'apellido y nombre',
+    'donante',
+    'comprador',
+    'pagador',
+    'titular',
+    'payer_name',
+    'payer.first_name',
+    'payer.last_name',
+    'nombre',
+    'descripcion',
+    'motivo',
+    'concepto',
+    'reason',
+  ],
+  pagador_email: [
+    'email del comprador',
+    'email de comprador',
+    'email del pagador',
+    'email',
+    'correo del comprador',
+    'correo',
+    'payer_email',
+    'payer.email',
+  ],
+  pagador_cuit_dni: [
+    'identificacion del comprador',
+    'documento del comprador',
+    'cuit del comprador',
+    'dni del comprador',
+    'cuit',
+    'cuil',
+    'dni',
+    'cuit cuil',
+    'payer_identification',
+    'payer.identification.number',
+    'identificacion',
+    'documento',
+  ],
+  tipo: [
+    'tipo de medio de pago',
+    'tipo de operacion',
+    'medio de pago',
+    'tipo',
+    'payment_type',
+    'operation_type',
+    'type',
+  ],
+  estado_origen: [
+    'tipo de operacion',
+    'estado de la operacion',
+    'estado',
+    'status',
+    'payment_status',
+  ],
+};
+
+function encontrarValor(fila, aliases) {
   const headers = Object.keys(fila);
-  for (const h of headers) {
-    if (alias.includes(normalizarHeader(h))) return fila[h];
+  // Paso 1: Coincidencia exacta con alias normalizado
+  for (const a of aliases) {
+    const normA = normalizarTexto(a);
+    for (const h of headers) {
+      if (normalizarTexto(h) === normA && fila[h] != null && String(fila[h]).trim() !== '') {
+        return fila[h];
+      }
+    }
+  }
+  // Paso 2: Coincidencia por subcadena
+  for (const a of aliases) {
+    const normA = normalizarTexto(a);
+    if (normA.length < 4) continue;
+    for (const h of headers) {
+      const normH = normalizarTexto(h);
+      if (normH.includes(normA) && fila[h] != null && String(fila[h]).trim() !== '') {
+        return fila[h];
+      }
+    }
   }
   return null;
+}
+
+function parsearFecha(raw) {
+  if (!raw) return null;
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) return raw;
+  if (typeof raw === 'number') {
+    const parsed = XLSX.SSF.parse_date_code(raw);
+    if (parsed) {
+      return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H || 0, parsed.M || 0, parsed.S || 0));
+    }
+  }
+  const s = String(raw).trim();
+  const dIso = new Date(s);
+  if (!Number.isNaN(dIso.getTime())) return dIso;
+
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m) {
+    const [, d, mth, y, h, min, sec] = m;
+    return new Date(Date.UTC(Number(y), Number(mth) - 1, Number(d), Number(h || 0), Number(min || 0), Number(sec || 0)));
+  }
+
+  return null;
+}
+
+function parsearMonto(raw) {
+  if (raw == null) return null;
+  if (typeof raw === 'number') return Number.isNaN(raw) ? null : raw;
+  let s = String(raw).trim().replace(/[\$\s]/g, '');
+  if (/\.\d{3},\d{2}$/.test(s) || (s.includes(',') && !s.includes('.'))) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.includes(',') && s.includes('.')) {
+    s = s.replace(/,/g, '');
+  }
+  const n = Number(s);
+  return Number.isNaN(n) ? null : n;
 }
 
 function filaARegistro(fila) {
@@ -43,29 +201,84 @@ function filaARegistro(fila) {
   const rawMonto = encontrarValor(fila, COLUMN_ALIASES.monto);
   const referencia = encontrarValor(fila, COLUMN_ALIASES.referencia);
   const tipoRaw = String(encontrarValor(fila, COLUMN_ALIASES.tipo) || '').toLowerCase();
+  const estadoRaw = String(encontrarValor(fila, COLUMN_ALIASES.estado_origen) || 'aprobado');
+  const nombreRaw = encontrarValor(fila, COLUMN_ALIASES.pagador_nombre);
 
   return {
-    fecha: rawFecha ? new Date(rawFecha) : null,
-    monto: rawMonto != null ? Number(String(rawMonto).replace(/[^0-9.,-]/g, '').replace(',', '.')) : null,
-    referencia_mp: referencia != null ? String(referencia) : null,
-    pagador_nombre: encontrarValor(fila, COLUMN_ALIASES.pagador_nombre) || null,
+    fecha: parsearFecha(rawFecha),
+    monto: parsearMonto(rawMonto),
+    referencia_mp: referencia != null ? String(referencia).trim() : null,
+    pagador_nombre: nombreRaw ? String(nombreRaw).trim() : null,
     pagador_email: encontrarValor(fila, COLUMN_ALIASES.pagador_email) || null,
     pagador_cuit_dni: encontrarValor(fila, COLUMN_ALIASES.pagador_cuit_dni) || null,
     tipo: tipoRaw.includes('recurr') || tipoRaw.includes('suscrip') ? 'donacion_recurrente' : 'donacion_unica',
-    estado_origen: encontrarValor(fila, COLUMN_ALIASES.estado_origen) || 'desconocido',
+    estado_origen: estadoRaw,
   };
 }
 
+function detectarDelimitadorCSV(texto) {
+  const primeraLinea = texto.split('\n')[0] || '';
+  const puntoYComa = (primeraLinea.match(/;/g) || []).length;
+  const coma = (primeraLinea.match(/,/g) || []).length;
+  const tab = (primeraLinea.match(/\t/g) || []).length;
+  if (tab > puntoYComa && tab > coma) return '\t';
+  if (puntoYComa > coma) return ';';
+  return ',';
+}
+
 function parseCSV(buffer) {
-  const filas = parse(buffer, { columns: true, skip_empty_lines: true, trim: true });
+  const texto = buffer.toString('utf8');
+  const delimiter = detectarDelimitadorCSV(texto);
+  const filas = parse(buffer, { columns: true, skip_empty_lines: true, trim: true, delimiter });
   return filas.map(filaARegistro);
+}
+
+function obtenerFilasDeHoja(hoja) {
+  const rowsRaw = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+  if (!rowsRaw || rowsRaw.length === 0) return [];
+
+  // Buscar en las primeras 10 filas cuál contiene los encabezados principales
+  let headerIndex = 0;
+  for (let i = 0; i < Math.min(rowsRaw.length, 10); i++) {
+    const fila = rowsRaw[i];
+    if (!Array.isArray(fila)) continue;
+    const filaTexto = fila.map((c) => normalizarTexto(c)).join(' ');
+    if (
+      (filaTexto.includes('operacion') || filaTexto.includes('fecha') || filaTexto.includes('monto') || filaTexto.includes('valor')) &&
+      (filaTexto.includes('id') || filaTexto.includes('aprobacion') || filaTexto.includes('compra') || filaTexto.includes('neto'))
+    ) {
+      headerIndex = i;
+      break;
+    }
+  }
+
+  const headers = rowsRaw[headerIndex];
+  if (!Array.isArray(headers)) return [];
+
+  const resultado = [];
+  for (let i = headerIndex + 1; i < rowsRaw.length; i++) {
+    const fila = rowsRaw[i];
+    if (!Array.isArray(fila) || fila.every((c) => c == null || c === '')) continue;
+    const obj = {};
+    headers.forEach((h, idx) => {
+      if (h != null) obj[String(h).trim()] = fila[idx];
+    });
+    resultado.push(obj);
+  }
+  return resultado;
 }
 
 function parseXLSX(buffer) {
   const wb = XLSX.read(buffer, { type: 'buffer' });
-  const hoja = wb.Sheets[wb.SheetNames[0]];
-  const filas = XLSX.utils.sheet_to_json(hoja, { defval: null });
-  return filas.map(filaARegistro);
+  let mejorFilas = [];
+  for (const name of wb.SheetNames) {
+    const hoja = wb.Sheets[name];
+    const filasHoja = obtenerFilasDeHoja(hoja);
+    if (filasHoja.length > mejorFilas.length) {
+      mejorFilas = filasHoja;
+    }
+  }
+  return mejorFilas.map(filaARegistro);
 }
 
 // ---- PDF — Parser calibrado contra resumen real de Mercado Pago ----
@@ -271,15 +484,41 @@ async function parsearArchivoMP(buffer, formato) {
   const registros = formato === 'xlsx' ? parseXLSX(buffer) : parseCSV(buffer);
 
   const filas = [];
+  const rendimientos = [];
   const invalidas = [];
 
   for (const r of registros) {
     const valida = r.fecha && !Number.isNaN(r.fecha.getTime()) && r.monto != null && !Number.isNaN(r.monto) && r.referencia_mp;
-    if (valida) filas.push(r);
-    else invalidas.push(r);
+    if (!valida) {
+      invalidas.push(r);
+      continue;
+    }
+
+    // Detectar si es un rendimiento financiero de Mercado Pago
+    const textoCompleto = `${r.pagador_nombre || ''} ${r.estado_origen || ''}`.toLowerCase();
+    const esRendimiento = PATRONES_RENDIMIENTO.some((re) => re.test(textoCompleto));
+    if (esRendimiento) {
+      rendimientos.push({
+        fecha: r.fecha,
+        monto: Math.abs(r.monto),
+        descripcion: r.pagador_nombre || 'Rendimiento Mercado Pago',
+      });
+      continue;
+    }
+
+    // Si el monto es negativo o 0, es un egreso o compra QR (no es donación para facturar)
+    if (r.monto <= 0) {
+      invalidas.push({
+        ...r,
+        tipo_detectado: 'egreso_o_devolucion',
+      });
+      continue;
+    }
+
+    filas.push(r);
   }
 
-  return { filas, rendimientos: [], invalidas };
+  return { filas, rendimientos, invalidas };
 }
 
 module.exports = { parsearArchivoMP };

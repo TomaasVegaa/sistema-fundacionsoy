@@ -12,8 +12,11 @@ uploads/
 storage/
 *.log
 
-# Archivos PDF (extractos bancarios, facturas generadas)
+# Archivos PDF y planillas (extractos bancarios, facturas generadas)
 *.pdf
+*.xlsx
+*.xls
+*.csv
 
 # Scripts temporales de prueba
 src/scratch_*.js
