@@ -70,11 +70,17 @@ CREATE TABLE IF NOT EXISTS facturas (
   emitida_en          TIMESTAMPTZ
 );
 
-ALTER TABLE donaciones
-  ADD CONSTRAINT donaciones_factura_fk
-  FOREIGN KEY (factura_id) REFERENCES facturas(id)
-  ON DELETE SET NULL
-  DEFERRABLE INITIALLY DEFERRED;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'donaciones_factura_fk'
+  ) THEN
+    ALTER TABLE donaciones
+      ADD CONSTRAINT donaciones_factura_fk
+      FOREIGN KEY (factura_id) REFERENCES facturas(id)
+      ON DELETE SET NULL
+      DEFERRABLE INITIALLY DEFERRED;
+  END IF;
+END $$;
 
 -- Rendimientos que Mercado Pago acredita por dejar el saldo invertido
 -- (cuenta remunerada). NO son donaciones: no llevan donante, no se
