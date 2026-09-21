@@ -23,6 +23,27 @@ async function inicializarBaseDeDatos() {
         [passwordHash]
       );
       console.log('✓ Usuario fundacionsoy configurado: fundacionsoy / fundacionsoy123');
+
+      // Tabla para registrar operaciones únicas del sistema
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS system_resets (
+          id TEXT PRIMARY KEY,
+          ejecutado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `);
+
+      // Limpieza de datos de prueba para la reunión con el cliente
+      const resetCheck = await pool.query(
+        "SELECT 1 FROM system_resets WHERE id = 'reset_reunion_cliente_20260921'"
+      );
+      if (resetCheck.rows.length === 0) {
+        console.log('Limpiando base de datos de prueba para reunión...');
+        await pool.query(`
+          TRUNCATE TABLE facturas, caja_movimientos, ingresos_financieros_mp, donaciones, raw_imports, egresos, donantes RESTART IDENTITY CASCADE;
+          INSERT INTO system_resets (id) VALUES ('reset_reunion_cliente_20260921');
+        `);
+        console.log('✓ Base de datos vaciada exitosamente para la reunión.');
+      }
     }
   } catch (err) {
     console.error('Aviso al verificar base de datos al inicio:', err.message || err);

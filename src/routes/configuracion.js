@@ -6,7 +6,24 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
-  res.render('configuracion', { config: rows[0], activeNav: 'configuracion', error: null, guardado: req.query.ok === '1' });
+  res.render('configuracion', {
+    config: rows[0],
+    activeNav: 'configuracion',
+    error: null,
+    guardado: req.query.ok === '1',
+    vaciado: req.query.vaciado === '1',
+  });
+});
+
+router.post('/vaciar-datos', async (req, res, next) => {
+  try {
+    await pool.query(`
+      TRUNCATE TABLE facturas, caja_movimientos, ingresos_financieros_mp, donaciones, raw_imports, egresos, donantes RESTART IDENTITY CASCADE;
+    `);
+    res.redirect('/configuracion?vaciado=1');
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/', async (req, res, next) => {
