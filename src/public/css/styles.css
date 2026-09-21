@@ -166,9 +166,12 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   padding: 28px 0 20px;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   z-index: 50;
 }
@@ -250,6 +253,7 @@ a { color: inherit; }
 .main {
   flex: 1;
   min-width: 0;
+  margin-left: 240px;
   background-color: var(--paper);
 }
 
@@ -658,6 +662,11 @@ td.money.egreso { color: var(--rust); font-weight: 500; }
 
   .app-shell {
     flex-direction: column;
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
   }
 
   .sidebar {
