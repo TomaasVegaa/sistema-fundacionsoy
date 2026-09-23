@@ -82,49 +82,59 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
     const contentW = pageW - margin * 2;
     const centerX = pageW / 2;
 
+    const razonSocial = (config && config.razon_social) || 'FUNDACION SOI (SERVICIO ONCOLOGICO INFANTIL)';
+    const cuitEmisor = (config && config.cuit_emisor) || '30-71916016-2';
+    const domicilio = (config && config.domicilio_comercial) || 'Asunción 731 Piso 1 Dpto 3 - San Miguel de Tucumán';
+
     // ============ ENCABEZADO ============
 
     // Linea superior
     doc.lineWidth(1.5)
        .moveTo(margin, 50).lineTo(pageW - margin, 50).stroke();
 
-    // Letra del comprobante (centro)
-    doc.fontSize(28).font('Helvetica-Bold')
-       .text(letra, centerX - 14, 55, { width: 28, align: 'center' });
-    doc.fontSize(8).font('Helvetica')
-       .text(`COD. ${pad(factura.cbte_tipo, 3)}`, centerX - 30, 85, { width: 60, align: 'center' });
+    // Letra del comprobante (centro con recuadro)
+    doc.lineWidth(1).rect(centerX - 18, 50, 36, 40).stroke();
+    doc.fontSize(24).font('Helvetica-Bold')
+       .text(letra, centerX - 18, 56, { width: 36, align: 'center' });
+    doc.fontSize(7.5).font('Helvetica')
+       .text(`COD. ${pad(factura.cbte_tipo, 3)}`, centerX - 30, 93, { width: 60, align: 'center' });
 
     // Lado izquierdo: datos del emisor
-    doc.fontSize(14).font('Helvetica-Bold')
-       .text('Fundación Soy', margin, 58);
-    doc.fontSize(9).font('Helvetica')
-       .text(`CUIT: ${config.cuit_emisor || 'Sin configurar'}`, margin, 78)
-       .text('IVA Exento', margin, 90)
-       .text(`Punto de Venta: ${pad(factura.punto_venta, 5)}`, margin, 102);
+    doc.fontSize(11).font('Helvetica-Bold')
+       .text(razonSocial, margin, 58, { width: centerX - margin - 30 });
+    doc.fontSize(8.5).font('Helvetica')
+       .text(`CUIT: ${cuitEmisor}`, margin, 85)
+       .text('Condición frente al IVA: IVA Exento', margin, 97)
+       .text(`Domicilio: ${domicilio}`, margin, 109, { width: centerX - margin - 30 });
 
     // Lado derecho: datos del comprobante
-    doc.fontSize(12).font('Helvetica-Bold')
-       .text(`FACTURA ${letra}`, pageW - margin - 200, 58, { width: 200, align: 'right' });
-    doc.fontSize(10).font('Helvetica')
-       .text(`Nro: ${numeroFormateado}`, pageW - margin - 200, 78, { width: 200, align: 'right' })
-       .text(`Fecha: ${formatDate(factura.emitida_en || new Date())}`, pageW - margin - 200, 93, { width: 200, align: 'right' });
+    doc.fontSize(13).font('Helvetica-Bold')
+       .text(`FACTURA ${letra}`, pageW - margin - 220, 58, { width: 220, align: 'right' });
+    doc.fontSize(9.5).font('Helvetica')
+       .text(`Punto de Venta: ${pad(factura.punto_venta, 5)}  Comp. Nro: ${pad(factura.numero_comprobante, 8)}`, pageW - margin - 250, 78, { width: 250, align: 'right' })
+       .text(`Fecha de Emisión: ${formatDate(factura.emitida_en || new Date())}`, pageW - margin - 220, 93, { width: 220, align: 'right' })
+       .text('Concepto: Aportes y Donaciones', pageW - margin - 220, 108, { width: 220, align: 'right' });
 
     // Linea separadora
     doc.lineWidth(0.5)
-       .moveTo(margin, 120).lineTo(pageW - margin, 120).stroke();
+       .moveTo(margin, 138).lineTo(pageW - margin, 138).stroke();
 
     // ============ DATOS DEL RECEPTOR ============
 
-    let y = 130;
+    let y = 146;
     doc.fontSize(9).font('Helvetica-Bold').text('DATOS DEL RECEPTOR', margin, y);
     y += 16;
     doc.fontSize(9).font('Helvetica');
 
     const nombreReceptor = donante ? donante.nombre || 'Consumidor Final' : 'Consumidor Final';
-    const docReceptor = donante && donante.cuit_dni ? `CUIT: ${donante.cuit_dni}` : 'Sin identificar (Consumidor Final)';
+    let docReceptor = 'Sin identificar (Consumidor Final)';
+    if (donante && donante.cuit_dni) {
+      const cleanDoc = String(donante.cuit_dni).replace(/[-\s]/g, '');
+      docReceptor = cleanDoc.length === 11 ? `CUIT: ${donante.cuit_dni}` : `DNI: ${donante.cuit_dni}`;
+    }
     const emailReceptor = donante && donante.email ? donante.email : '';
 
-    doc.text(`Nombre: ${nombreReceptor}`, margin, y);
+    doc.text(`Nombre / Razón Social: ${nombreReceptor}`, margin, y);
     doc.text(`Documento: ${docReceptor}`, margin + contentW / 2, y);
     y += 14;
     if (emailReceptor) {
@@ -133,9 +143,9 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
     }
     doc.text(`Condición IVA: ${donante ? donante.condicion_iva || 'Consumidor Final' : 'Consumidor Final'}`, margin, y);
     y += 14;
-    doc.text(`Condición de venta: Contado`, margin, y);
+    doc.text(`Condición de venta: Contado / Transferencia`, margin, y);
 
-    y += 20;
+    y += 18;
     doc.lineWidth(0.5)
        .moveTo(margin, y).lineTo(pageW - margin, y).stroke();
     y += 10;

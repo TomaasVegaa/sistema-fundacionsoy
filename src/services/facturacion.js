@@ -31,8 +31,15 @@ async function procesarDonacion(donacionId) {
 
     const config = await obtenerConfigArca(client);
 
+    // Obtener donante si existe para incluir en ARCA y PDF
+    let donante = null;
+    if (donacion.donante_id) {
+      const { rows: dRows } = await client.query('SELECT * FROM donantes WHERE id = $1', [donacion.donante_id]);
+      donante = dRows[0] || null;
+    }
+
     try {
-      const resultado = await arcaService.emitirFacturaC(config, donacion);
+      const resultado = await arcaService.emitirFacturaC(config, donacion, donante);
 
       await client.query('BEGIN');
 
@@ -47,13 +54,6 @@ async function procesarDonacion(donacionId) {
         ]
       );
       const facturaId = factura.rows[0].id;
-
-      // Obtener donante si existe para incluir en el PDF
-      let donante = null;
-      if (donacion.donante_id) {
-        const { rows: dRows } = await client.query('SELECT * FROM donantes WHERE id = $1', [donacion.donante_id]);
-        donante = dRows[0] || null;
-      }
 
       // Generar y almacenar el PDF de la factura
       const facturasDir = process.env.FACTURAS_DIR || path.resolve(__dirname, '../../storage/facturas');

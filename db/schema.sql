@@ -132,6 +132,10 @@ CREATE TABLE IF NOT EXISTS configuracion_arca (
   cbte_tipo_default     INTEGER NOT NULL DEFAULT 11,
   certificado_path      TEXT,
   clave_privada_path    TEXT,
+  certificado_content   TEXT,
+  clave_privada_content TEXT,
+  razon_social          TEXT DEFAULT 'FUNDACION SOI (SERVICIO ONCOLOGICO INFANTIL)',
+  domicilio_comercial   TEXT DEFAULT 'ASUNCION 731 Piso:1 Dpto:3, San Miguel de Tucumán, Tucumán',
   cuit_emisor           TEXT,
   ambiente              TEXT NOT NULL DEFAULT 'mock'
                          CHECK (ambiente IN ('mock', 'homologacion', 'produccion')),
@@ -139,8 +143,8 @@ CREATE TABLE IF NOT EXISTS configuracion_arca (
 );
 
 -- Fila unica de configuracion (se actualiza, no se duplica).
-INSERT INTO configuracion_arca (id, ambiente)
-  VALUES (1, 'mock')
+INSERT INTO configuracion_arca (id, ambiente, punto_venta, cuit_emisor, razon_social, domicilio_comercial)
+  VALUES (1, 'mock', 2, '30-71916016-2', 'FUNDACION SOI (SERVICIO ONCOLOGICO INFANTIL)', 'ASUNCION 731 Piso:1 Dpto:3, San Miguel de Tucumán, Tucumán')
   ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
