@@ -5,7 +5,9 @@ const multer = require('multer');
 const forge = require('node-forge');
 const pool = require('../db/pool');
 const { validar, validarCUIT } = require('../middleware/validators');
-const { limpiarCache } = require('../services/arca/wsaa');
+const wsaa = require('../services/arca/wsaa');
+const wsfe = require('../services/arca/wsfe');
+const { limpiarCache } = wsaa;
 
 const router = express.Router();
 const upload = multer({
@@ -64,11 +66,80 @@ router.get('/', async (req, res) => {
   res.render('configuracion', {
     config,
     certInfo,
+    testConexion: null,
     activeNav: 'configuracion',
     error: null,
     guardado: req.query.ok === '1',
     vaciado: req.query.vaciado === '1',
   });
+});
+
+router.post('/test-conexion', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
+    const config = rows[0] || {};
+    const certInfo = obtenerInfoCertificado(config.certificado_content, config.certificado_path);
+
+    // 1. Verificar estado de servidores ARCA (FEDummy)
+    let estadoServidores = { appServer: 'Desconocido', dbServer: 'Desconocido', authServer: 'Desconocido', servidoresOk: false };
+    try {
+      estadoServidores = await wsfe.verificarEstadoServidores({ ambiente: config.ambiente });
+    } catch (e) {
+      estadoServidores.error = e.message;
+    }
+
+    // 2. Probar autenticación WSAA (Token y Firma)
+    let auth = null;
+    let authError = null;
+    try {
+      auth = await wsaa.obtenerTokenSign(config);
+    } catch (e) {
+      authError = e.message;
+    }
+
+    // 3. Consultar último comprobante para validar Punto de Venta
+    let ultimoAutorizado = null;
+    let ptoVtaError = null;
+    if (auth) {
+      try {
+        ultimoAutorizado = await wsfe.consultarUltimoAutorizado({
+          ambiente: config.ambiente,
+          puntoVenta: config.punto_venta || 2,
+          cbteTipo: config.cbte_tipo_default || 11,
+          auth,
+          cuit: config.cuit_emisor || '30719160162',
+        });
+      } catch (e) {
+        ptoVtaError = e.message;
+      }
+    }
+
+    const testConexion = {
+      ejecutado: true,
+      exito: estadoServidores.servidoresOk && !authError && !ptoVtaError,
+      ambiente: config.ambiente,
+      servidores: estadoServidores,
+      authOk: !authError,
+      authError,
+      puntoVenta: config.punto_venta || 2,
+      ultimoAutorizado,
+      proximoComprobante: ultimoAutorizado !== null ? ultimoAutorizado + 1 : null,
+      ptoVtaError,
+      timestamp: new Date(),
+    };
+
+    res.render('configuracion', {
+      config,
+      certInfo,
+      testConexion,
+      activeNav: 'configuracion',
+      error: null,
+      guardado: false,
+      vaciado: false,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/vaciar-datos', async (req, res, next) => {

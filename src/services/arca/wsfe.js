@@ -22,6 +22,45 @@ function formatDateYYYYMMDD(d) {
 const contadoresMock = new Map();
 
 /**
+ * Consulta el estado de los servidores de ARCA (FEDummy: AppServer, DbServer, AuthServer).
+ * No requiere autenticacion previa y no altera ningun dato.
+ */
+async function verificarEstadoServidores({ ambiente = 'produccion' }) {
+  if (ambiente === 'mock') {
+    return { appServer: 'OK', dbServer: 'OK', authServer: 'OK', servidoresOk: true, mock: true };
+  }
+
+  const wsfeUrl = WSDL_URLS[ambiente] || WSDL_URLS.produccion;
+  const soapReq = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <FEDummy xmlns="http://ar.gov.afip.dif.FEV1/" />
+  </soap:Body>
+</soap:Envelope>`;
+
+  const resp = await fetch(wsfeUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/xml; charset=utf-8',
+      'SOAPAction': 'http://ar.gov.afip.dif.FEV1/FEDummy',
+    },
+    body: soapReq,
+  });
+
+  const xmlResp = await resp.text();
+  const appMatch = xmlResp.match(/<AppServer>(.*?)<\/AppServer>/);
+  const dbMatch = xmlResp.match(/<DbServer>(.*?)<\/DbServer>/);
+  const authMatch = xmlResp.match(/<AuthServer>(.*?)<\/AuthServer>/);
+
+  return {
+    appServer: appMatch ? appMatch[1] : 'Error',
+    dbServer: dbMatch ? dbMatch[1] : 'Error',
+    authServer: authMatch ? authMatch[1] : 'Error',
+    servidoresOk: (appMatch?.[1] === 'OK') && (dbMatch?.[1] === 'OK') && (authMatch?.[1] === 'OK'),
+  };
+}
+
+/**
  * Consulta el ultimo comprobante autorizado para el punto de venta y tipo de comprobante.
  */
 async function consultarUltimoAutorizado({ ambiente, puntoVenta, cbteTipo, auth, cuit }) {
@@ -258,4 +297,4 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   };
 }
 
-module.exports = { solicitarCAE, consultarUltimoAutorizado, WSDL_URLS };
+module.exports = { solicitarCAE, consultarUltimoAutorizado, verificarEstadoServidores, WSDL_URLS };

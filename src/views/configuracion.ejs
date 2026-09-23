@@ -81,6 +81,77 @@
 
 </div>
 
+<!-- RESULTADO DEL TEST DE CONEXIÓN -->
+<% if (typeof testConexion !== 'undefined' && testConexion) { %>
+  <% if (testConexion.exito) { %>
+    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; border-bottom: 1px solid #bbf7d0; padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <strong style="color: #15803d; font-size: 15px;">Conexión en Vivo con ARCA Exitosa (100% Operativa)</strong>
+        </div>
+        <span style="font-size: 11.5px; color: #166534; font-weight: 600; background: #dcfce7; padding: 3px 8px; border-radius: 999px;">
+          <%= testConexion.ambiente.toUpperCase() %> • <%= new Date(testConexion.timestamp).toLocaleTimeString('es-AR') %>
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 13px; color: #166534;">
+        <div style="background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 14px;">
+          <div style="font-weight: 600; color: #15803d; margin-bottom: 4px;">1. Servidores ARCA (FEDummy)</div>
+          <div>AppServer: <strong style="color: #16a34a;"><%= testConexion.servidores.appServer %></strong></div>
+          <div>DbServer: <strong style="color: #16a34a;"><%= testConexion.servidores.dbServer %></strong> | AuthServer: <strong style="color: #16a34a;"><%= testConexion.servidores.authServer %></strong></div>
+        </div>
+
+        <div style="background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 14px;">
+          <div style="font-weight: 600; color: #15803d; margin-bottom: 4px;">2. Autenticación Fiscal (WSAA)</div>
+          <div>Certificado y Clave: <strong style="color: #16a34a;">Válidos y Aprobados</strong></div>
+          <div>Token y Sign: <strong style="color: #16a34a;">Autorizados para WSFE</strong></div>
+        </div>
+
+        <div style="background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 14px;">
+          <div style="font-weight: 600; color: #15803d; margin-bottom: 4px;">3. Punto de Venta <%= String(testConexion.puntoVenta).padStart(5, '0') %> (WSFE)</div>
+          <div>Último comprobante: <strong>#<%= testConexion.ultimoAutorizado %></strong></div>
+          <div>Próximo a emitir: <strong style="color: #15803d;">#<%= testConexion.proximoComprobante %> (Factura C)</strong></div>
+        </div>
+      </div>
+
+      <p style="margin: 14px 0 0 0; font-size: 12.5px; color: #15803d; line-height: 1.4;">
+        ✓ <strong>Verificación no destructiva completada:</strong> Se confirmó la comunicación de ida y vuelta con los servidores fiscales de ARCA sin emitir ningún comprobante, sin gastar numeración ni alterar la base de datos.
+      </p>
+    </div>
+  <% } else { %>
+    <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 18px 20px; margin-bottom: 24px; color: #991b1b; font-size: 13.5px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 600; font-size: 15px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        No se pudo completar la verificación con ARCA
+      </div>
+      <% if (testConexion.authError) { %>
+        <div style="margin-top: 4px;">• <strong>Error de autenticación (WSAA):</strong> <%= testConexion.authError %></div>
+      <% } %>
+      <% if (testConexion.ptoVtaError) { %>
+        <div style="margin-top: 4px;">• <strong>Error en punto de venta (WSFE):</strong> <%= testConexion.ptoVtaError %></div>
+      <% } %>
+      <% if (testConexion.servidores && testConexion.servidores.error) { %>
+        <div style="margin-top: 4px;">• <strong>Error de servidores:</strong> <%= testConexion.servidores.error %></div>
+      <% } %>
+    </div>
+  <% } %>
+<% } %>
+
+<!-- BARRA DE ACCIÓN PARA PROBAR CONEXIÓN -->
+<div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: white; border: 1px solid var(--paper-line); border-radius: 8px; padding: 14px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+  <div>
+    <div style="font-weight: 600; font-size: 13.5px; color: var(--ink);">Diagnóstico en Vivo de ARCA</div>
+    <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Comprueba la conexión con los servidores fiscales y el punto de venta sin emitir facturas ni modificar números.</div>
+  </div>
+  <form method="POST" action="/configuracion/test-conexion" style="margin: 0;">
+    <button type="submit" class="btn btn--ghost" style="border-color: #cbd5e1; font-size: 13px; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px; font-weight: 500;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Verificar Conexión en Vivo con ARCA
+    </button>
+  </form>
+</div>
+
 <% if (config.ambiente === 'mock') { %>
   <div class="aviso">
     El sistema está configurado en modo <strong>simulado (mock)</strong>: genera números y CAE ficticios para pruebas internas.
