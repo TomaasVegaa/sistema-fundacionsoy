@@ -345,19 +345,26 @@ const PATRONES_RENDIMIENTO = [
   /rendimiento/i,
   /dinero invertido/i,
   /r[eé]dito/i,
-  /inter[eé]s generad/i,
+  /inter[eé]s/i,
+  /intereses/i,
   /ganancia por saldo/i,
   /cuenta remunerada/i,
+  /pago de inter[eé]s/i,
+  /liq\.?\s*rendimiento/i,
 ];
 
 // Movimientos que son ingresos (transferencias recibidas, pagos recibidos, etc.)
 const PATRONES_INGRESO = [
   /transferencia recibida/i,
+  /transferencia/i,
+  /transf\b/i,
+  /tef datanet/i,
   /pago recibido/i,
   /recibiste un pago/i,
   /cobraste/i,
   /donaci[oó]n/i,
   /acreditaci[oó]n/i,
+  /dep[oó]sito/i,
   /dinero retirado/i,         // en el PDF real, "Dinero retirado X" son ingresos al saldo
   /devoluci[oó]n de pago/i,
 ];
