@@ -65,6 +65,9 @@ const COLUMN_ALIASES = {
     'id operacion',
     'numero de operacion',
     'nro de operacion',
+    'nro de referencia',
+    'nro. de referencia',
+    'nro referencia',
     'nro operacion',
     'payment_id',
     'source_id',
@@ -202,7 +205,27 @@ function filaARegistro(fila) {
   const referencia = encontrarValor(fila, COLUMN_ALIASES.referencia);
   const tipoRaw = String(encontrarValor(fila, COLUMN_ALIASES.tipo) || '').toLowerCase();
   const estadoRaw = String(encontrarValor(fila, COLUMN_ALIASES.estado_origen) || 'aprobado');
-  const nombreRaw = encontrarValor(fila, COLUMN_ALIASES.pagador_nombre);
+  let nombreRaw = encontrarValor(fila, COLUMN_ALIASES.pagador_nombre);
+  let cuitRaw = encontrarValor(fila, COLUMN_ALIASES.pagador_cuit_dni);
+
+  const conceptoRaw = String(encontrarValor(fila, ['concepto', 'causal', 'descripcion', 'motivo']) || '');
+
+  // Si no hay CUIT en columna separada, buscar CUIT en el concepto (11 dígitos continuos)
+  if (!cuitRaw && conceptoRaw) {
+    const cuitMatch = conceptoRaw.match(/\b(20|23|24|27|30|33|34)\d{9}\b/);
+    if (cuitMatch) cuitRaw = cuitMatch[0];
+  }
+
+  // Si el nombre no venía separado pero viene en concepto tipo TRANSF APELLIDO/NOMBRE
+  if ((!nombreRaw || nombreRaw === conceptoRaw) && conceptoRaw.startsWith('TRANSF ')) {
+    const parts = conceptoRaw.replace('TRANSF ', '').split(/\s+/);
+    if (parts.length > 0 && !/^\d+$/.test(parts[0])) {
+      nombreRaw = parts[0].replace('/', ' ');
+    }
+  } else if (conceptoRaw.includes('TEF DATANET PR')) {
+    const tefMatch = conceptoRaw.match(/TEF DATANET PR (.*?) \d{11}/);
+    if (tefMatch) nombreRaw = tefMatch[1].trim();
+  }
 
   return {
     fecha: parsearFecha(rawFecha),
@@ -210,7 +233,7 @@ function filaARegistro(fila) {
     referencia_mp: referencia != null ? String(referencia).trim() : null,
     pagador_nombre: nombreRaw ? String(nombreRaw).trim() : null,
     pagador_email: encontrarValor(fila, COLUMN_ALIASES.pagador_email) || null,
-    pagador_cuit_dni: encontrarValor(fila, COLUMN_ALIASES.pagador_cuit_dni) || null,
+    pagador_cuit_dni: cuitRaw ? String(cuitRaw).trim() : null,
     tipo: tipoRaw.includes('recurr') || tipoRaw.includes('suscrip') ? 'donacion_recurrente' : 'donacion_unica',
     estado_origen: estadoRaw,
   };
@@ -237,20 +260,24 @@ function obtenerFilasDeHoja(hoja) {
   const rowsRaw = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
   if (!rowsRaw || rowsRaw.length === 0) return [];
 
-  // Buscar en las primeras 10 filas cuál contiene los encabezados principales
-  let headerIndex = 0;
-  for (let i = 0; i < Math.min(rowsRaw.length, 10); i++) {
+  // Buscar en las primeras 15 filas cuál contiene los encabezados principales
+  let headerIndex = -1;
+  for (let i = 0; i < Math.min(rowsRaw.length, 15); i++) {
     const fila = rowsRaw[i];
     if (!Array.isArray(fila)) continue;
     const filaTexto = fila.map((c) => normalizarTexto(c)).join(' ');
+    // Detecta cabeceras de Mercado Pago o de extractos bancarios (Banco Macro / Home Banking)
     if (
-      (filaTexto.includes('operacion') || filaTexto.includes('fecha') || filaTexto.includes('monto') || filaTexto.includes('valor')) &&
-      (filaTexto.includes('id') || filaTexto.includes('aprobacion') || filaTexto.includes('compra') || filaTexto.includes('neto'))
+      (filaTexto.includes('fecha') && (filaTexto.includes('monto') || filaTexto.includes('importe') || filaTexto.includes('valor'))) ||
+      (filaTexto.includes('referencia') && filaTexto.includes('concepto')) ||
+      (filaTexto.includes('operacion') && (filaTexto.includes('id') || filaTexto.includes('aprobacion') || filaTexto.includes('compra') || filaTexto.includes('neto')))
     ) {
       headerIndex = i;
       break;
     }
   }
+
+  if (headerIndex === -1) headerIndex = 0;
 
   const headers = rowsRaw[headerIndex];
   if (!Array.isArray(headers)) return [];
@@ -259,9 +286,13 @@ function obtenerFilasDeHoja(hoja) {
   for (let i = headerIndex + 1; i < rowsRaw.length; i++) {
     const fila = rowsRaw[i];
     if (!Array.isArray(fila) || fila.every((c) => c == null || c === '')) continue;
+    // Detener si es pie de página de Banco Macro u otros bancos
+    if (fila[0] && (String(fila[0]).startsWith('Fecha de descarga') || String(fila[0]).startsWith('Empresa:'))) {
+      break;
+    }
     const obj = {};
     headers.forEach((h, idx) => {
-      if (h != null) obj[String(h).trim()] = fila[idx];
+      if (h != null && String(h).trim() !== '') obj[String(h).trim()] = fila[idx];
     });
     resultado.push(obj);
   }
@@ -511,6 +542,21 @@ async function parsearArchivoMP(buffer, formato) {
       invalidas.push({
         ...r,
         tipo_detectado: 'egreso_o_devolucion',
+      });
+      continue;
+    }
+
+    // Detectar transferencias propias entre cuentas de la misma fundación o fondos propios
+    const cuitFundacion = '30719160162';
+    const esPropia =
+      (r.pagador_cuit_dni && r.pagador_cuit_dni.replace(/[-\s]/g, '') === cuitFundacion) ||
+      textoCompleto.includes(cuitFundacion) ||
+      textoCompleto.includes('liq susc') ||
+      textoCompleto.includes('liq.susc');
+    if (esPropia) {
+      invalidas.push({
+        ...r,
+        tipo_detectado: 'transferencia_propia',
       });
       continue;
     }
