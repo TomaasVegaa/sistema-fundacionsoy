@@ -179,6 +179,7 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   }
 
   const docTipo = comprobante.docTipo || 99;
+  const docNro = comprobante.docNro ? String(comprobante.docNro).replace(/[-\s]/g, '') : '0';
   // En ARCA / AFIP, la fecha fiscal de emision (CbteFch) debe ser la fecha actual (hora Argentina).
   // Si se envia una fecha anterior (por ejemplo, la fecha historica del extracto bancario),
   // ARCA rechaza con error [10016] ("El numero o fecha del comprobante no se corresponde con el proximo a autorizar"):
