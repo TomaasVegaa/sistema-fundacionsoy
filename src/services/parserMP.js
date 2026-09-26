@@ -227,6 +227,10 @@ function filaARegistro(fila) {
     if (tefMatch) nombreRaw = tefMatch[1].trim();
   }
 
+  if (nombreRaw && /^TRANSF:[A-Za-z0-9_-]+$/i.test(nombreRaw)) {
+    nombreRaw = 'Transferencia Bancaria';
+  }
+
   return {
     fecha: parsearFecha(rawFecha),
     monto: parsearMonto(rawMonto),

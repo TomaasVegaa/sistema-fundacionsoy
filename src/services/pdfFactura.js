@@ -35,6 +35,42 @@ function formatDateYYYYMMDD(d) {
   return `${yyyy}${mm}${dd}`;
 }
 
+const CONDICION_IVA_MAP = {
+  consumidor_final: 'Consumidor Final',
+  iva_exento: 'IVA Exento',
+  exento: 'IVA Exento',
+  responsable_inscripto: 'IVA Responsable Inscripto',
+  monotributo: 'Responsable Monotributo',
+  no_responsable: 'No Responsable',
+};
+
+function formatCondicionIva(c) {
+  if (!c) return 'Consumidor Final';
+  const k = String(c).toLowerCase().trim();
+  return CONDICION_IVA_MAP[k] || c;
+}
+
+function formatCuitDni(doc) {
+  if (!doc) return 'Sin identificar (Consumidor Final)';
+  const s = String(doc).replace(/\D/g, '');
+  if (s.length === 11) {
+    return `CUIT: ${s.slice(0, 2)}-${s.slice(2, 10)}-${s.slice(10)}`;
+  }
+  if (s.length === 8 || s.length === 7) {
+    return `DNI: ${s.slice(0, -6)}.${s.slice(-6, -3)}.${s.slice(-3)}`;
+  }
+  return `Doc: ${doc}`;
+}
+
+function formatNombreReceptor(nombre) {
+  if (!nombre) return 'Consumidor Final';
+  const s = String(nombre).trim();
+  if (/^TRANSF:[A-Za-z0-9_-]+$/i.test(s)) {
+    return 'Transferencia Bancaria';
+  }
+  return s;
+}
+
 /**
  * Genera el buffer de un PDF de Factura C.
  * @param {object} params
@@ -126,26 +162,37 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
     y += 16;
     doc.fontSize(9).font('Helvetica');
 
-    const nombreReceptor = donante ? donante.nombre || 'Consumidor Final' : 'Consumidor Final';
-    let docReceptor = 'Sin identificar (Consumidor Final)';
-    if (donante && donante.cuit_dni) {
-      const cleanDoc = String(donante.cuit_dni).replace(/[-\s]/g, '');
-      docReceptor = cleanDoc.length === 11 ? `CUIT: ${donante.cuit_dni}` : `DNI: ${donante.cuit_dni}`;
-    }
+    const rawNombre = donante ? donante.nombre : null;
+    const nombreReceptor = formatNombreReceptor(rawNombre);
+    const docReceptor = formatCuitDni(donante ? donante.cuit_dni : null);
     const emailReceptor = donante && donante.email ? donante.email : '';
+    const condicionIva = formatCondicionIva(donante ? donante.condicion_iva : 'Consumidor Final');
 
-    doc.text(`Nombre / Razón Social: ${nombreReceptor}`, margin, y);
-    doc.text(`Documento: ${docReceptor}`, margin + contentW / 2, y);
-    y += 14;
+    // Fila 1: Nombre / Razón Social en su propia línea completa para evitar solapamiento
+    doc.font('Helvetica-Bold').text('Nombre / Razón Social: ', margin, y, { continued: true });
+    doc.font('Helvetica').text(nombreReceptor, { width: contentW - 130 });
+    y += 15;
+
+    // Fila 2: Documento (izquierda) y Condición frente al IVA (derecha)
+    const colDerX = margin + contentW * 0.52;
+    doc.font('Helvetica-Bold').text('Documento: ', margin, y, { continued: true });
+    doc.font('Helvetica').text(docReceptor);
+
+    doc.font('Helvetica-Bold').text('Condición frente al IVA: ', colDerX, y, { continued: true });
+    doc.font('Helvetica').text(condicionIva);
+    y += 15;
+
+    // Fila 3: Condición de venta (izquierda) y Email (derecha si existe)
+    doc.font('Helvetica-Bold').text('Condición de venta: ', margin, y, { continued: true });
+    doc.font('Helvetica').text('Contado / Transferencia');
+
     if (emailReceptor) {
-      doc.text(`Email: ${emailReceptor}`, margin, y);
-      y += 14;
+      doc.font('Helvetica-Bold').text('Email: ', colDerX, y, { continued: true });
+      doc.font('Helvetica').text(emailReceptor);
     }
-    doc.text(`Condición IVA: ${donante ? donante.condicion_iva || 'Consumidor Final' : 'Consumidor Final'}`, margin, y);
-    y += 14;
-    doc.text(`Condición de venta: Contado / Transferencia`, margin, y);
+    y += 15;
 
-    y += 18;
+    y += 4;
     doc.lineWidth(0.5)
        .moveTo(margin, y).lineTo(pageW - margin, y).stroke();
     y += 10;
@@ -153,8 +200,8 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
     // ============ DETALLE ============
 
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Descripción', margin, y, { width: contentW * 0.55 });
-    doc.text('Importe', margin + contentW * 0.55, y, { width: contentW * 0.45, align: 'right' });
+    doc.text('Descripción', margin, y, { width: contentW * 0.65 });
+    doc.text('Importe', margin + contentW * 0.65, y, { width: contentW * 0.35, align: 'right' });
     y += 16;
     doc.lineWidth(0.3)
        .moveTo(margin, y).lineTo(pageW - margin, y).stroke();
@@ -162,10 +209,11 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
 
     doc.fontSize(9).font('Helvetica');
     const concepto = donacion.tipo === 'donacion_recurrente' ? 'Donación recurrente' : 'Donación';
-    const refMP = donacion.referencia_mp ? ` (Ref. MP: ${donacion.referencia_mp})` : '';
-    doc.text(`${concepto}${refMP}`, margin, y, { width: contentW * 0.55 });
+    const refMP = donacion.referencia_mp ? ` (Ref: ${donacion.referencia_mp})` : '';
+    const fechaDon = donacion.fecha ? ` - Fecha: ${formatDate(donacion.fecha)}` : '';
+    doc.text(`${concepto}${refMP}${fechaDon}`, margin, y, { width: contentW * 0.65 });
     doc.font('Helvetica-Bold')
-       .text(formatMoney(factura.monto), margin + contentW * 0.55, y, { width: contentW * 0.45, align: 'right' });
+       .text(formatMoney(factura.monto), margin + contentW * 0.65, y, { width: contentW * 0.35, align: 'right' });
 
     y += 30;
     doc.lineWidth(0.5)

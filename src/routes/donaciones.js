@@ -7,6 +7,7 @@ const pool = require('../db/pool');
 const { parsearArchivoMP } = require('../services/parserMP');
 const { procesarDonacion, procesarLotePendiente } = require('../services/facturacion');
 const { registrarIngresoFinanciero } = require('../services/caja');
+const { generarFacturaPDF } = require('../services/pdfFactura');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -191,27 +192,50 @@ router.post('/:id/reintentar', async (req, res, next) => {
   }
 });
 
-// Descargar PDF de factura
+// Descargar / Visualizar PDF de factura
 router.get('/:id/factura.pdf', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT f.pdf_url FROM facturas f
+      `SELECT f.*, d.id as donacion_id, d.monto as donacion_monto, d.tipo as donacion_tipo,
+              d.referencia_mp, d.fecha as donacion_fecha, d.donante_id
+       FROM facturas f
        JOIN donaciones d ON d.factura_id = f.id
        WHERE d.id = $1 AND f.estado = 'emitida'`,
       [req.params.id]
     );
-    if (rows.length === 0 || !rows[0].pdf_url) {
-      return res.status(404).send('Factura no encontrada.');
+    if (rows.length === 0) {
+      return res.status(404).send('Factura no encontrada o no emitida.');
     }
 
-    const pdfPath = path.resolve(rows[0].pdf_url);
-    if (!fs.existsSync(pdfPath)) {
-      return res.status(404).send('Archivo PDF no encontrado.');
+    const factura = rows[0];
+    let donante = null;
+    if (factura.donante_id) {
+      const dRes = await pool.query('SELECT * FROM donantes WHERE id = $1', [factura.donante_id]);
+      donante = dRes.rows[0] || null;
     }
+
+    const cRes = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
+    const config = cRes.rows[0] || {};
+
+    const donacion = {
+      id: factura.donacion_id,
+      monto: factura.donacion_monto,
+      tipo: factura.donacion_tipo,
+      referencia_mp: factura.referencia_mp,
+      fecha: factura.donacion_fecha,
+    };
+
+    // Regenerar dinámicamente con el diseño mejorado
+    const pdfBuffer = await generarFacturaPDF({
+      factura,
+      donacion,
+      donante,
+      config,
+    });
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="factura_${req.params.id}.pdf"`);
-    fs.createReadStream(pdfPath).pipe(res);
+    res.setHeader('Content-Disposition', `inline; filename="factura_${factura.numero_comprobante || req.params.id}.pdf"`);
+    res.send(pdfBuffer);
   } catch (err) {
     next(err);
   }

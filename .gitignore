@@ -23,6 +23,7 @@ storage/
 
 # Scripts temporales de prueba
 src/scratch_*.js
+scratch/
 
 # Sistema operativo
 .DS_Store

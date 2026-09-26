@@ -21,6 +21,20 @@ function formatDateYYYYMMDD(d) {
   return `${yyyy}${mm}${dd}`;
 }
 
+function getFechaHoyArgentina() {
+  const formatter = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(new Date());
+  const yyyy = parts.find((p) => p.type === 'year').value;
+  const mm = parts.find((p) => p.type === 'month').value;
+  const dd = parts.find((p) => p.type === 'day').value;
+  return `${yyyy}${mm}${dd}`;
+}
+
 const contadoresMock = new Map();
 
 /**
@@ -165,8 +179,19 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   }
 
   const docTipo = comprobante.docTipo || 99;
-  const docNro = comprobante.docNro ? String(comprobante.docNro).replace(/[-\s]/g, '') : '0';
-  const cbteFch = formatDateYYYYMMDD(comprobante.fecha || new Date());
+  // En ARCA / AFIP, la fecha fiscal de emision (CbteFch) debe ser la fecha actual (hora Argentina).
+  // Si se envia una fecha anterior (por ejemplo, la fecha historica del extracto bancario),
+  // ARCA rechaza con error [10016] ("El numero o fecha del comprobante no se corresponde con el proximo a autorizar"):
+  // 1) CbteFch debe ser cronológicamente mayor o igual a la fecha de la última factura autorizada.
+  // 2) Concepto 1 (Productos/Donaciones) no permite comprobantes con más de 5 días de antigüedad.
+  const hoyArg = getFechaHoyArgentina();
+  let cbteFch = hoyArg;
+  if (comprobante.fecha) {
+    const fTransaccion = formatDateYYYYMMDD(comprobante.fecha);
+    if (fTransaccion >= hoyArg) {
+      cbteFch = fTransaccion;
+    }
+  }
   const impTotal = Number(comprobante.monto).toFixed(2);
   const concepto = comprobante.concepto || 1; // 1 = Productos / General
 
