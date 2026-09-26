@@ -23,7 +23,8 @@ router.get('/', async (req, res) => {
 
   const { rows } = await pool.query(
     `SELECT d.*, don.nombre AS donante_nombre, don.email AS donante_email,
-            f.pdf_url
+            f.pdf_url,
+            (SELECT error_detalle FROM facturas WHERE donacion_id = d.id ORDER BY id DESC LIMIT 1) AS error_detalle
      FROM donaciones d
      LEFT JOIN donantes don ON don.id = d.donante_id
      LEFT JOIN facturas f ON f.id = d.factura_id
