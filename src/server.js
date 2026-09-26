@@ -1,8 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const tls = require('tls');
 const bcrypt = require('bcrypt');
 const app = require('./app');
 const pool = require('./db/pool');
+
+// Compatibilidad de OpenSSL 3 en Linux (Render) con servidores heredados de ARCA/AFIP
+try {
+  tls.DEFAULT_CIPHERS = 'DEFAULT@SECLEVEL=0';
+} catch (_) {}
 
 const PORT = process.env.PORT || 3000;
 

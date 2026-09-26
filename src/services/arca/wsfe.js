@@ -2,6 +2,8 @@
 // Emite Factura C (CbteTipo 11) via FECAESolicitar.
 // Cumple con la Resolucion General 5616 (Condicion Frente al IVA del Receptor).
 
+const { soapPost } = require('./client');
+
 const WSDL_URLS = {
   homologacion: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx',
   produccion: 'https://servicios1.afip.gov.ar/wsfev1/service.asmx',
@@ -38,14 +40,14 @@ async function verificarEstadoServidores({ ambiente = 'produccion' }) {
   </soap:Body>
 </soap:Envelope>`;
 
-  const resp = await fetch(wsfeUrl, {
-    method: 'POST',
-    headers: {
+  const resp = await soapPost(
+    wsfeUrl,
+    {
       'Content-Type': 'text/xml; charset=utf-8',
       'SOAPAction': 'http://ar.gov.afip.dif.FEV1/FEDummy',
     },
-    body: soapReq,
-  });
+    soapReq
+  );
 
   const xmlResp = await resp.text();
   const appMatch = xmlResp.match(/<AppServer>(.*?)<\/AppServer>/);
@@ -94,14 +96,14 @@ async function consultarUltimoAutorizado({ ambiente, puntoVenta, cbteTipo, auth,
   </soap:Body>
 </soap:Envelope>`;
 
-  const resp = await fetch(wsfeUrl, {
-    method: 'POST',
-    headers: {
+  const resp = await soapPost(
+    wsfeUrl,
+    {
       'Content-Type': 'text/xml; charset=utf-8',
       'SOAPAction': 'http://ar.gov.afip.dif.FEV1/FECompUltimoAutorizado',
     },
-    body: soapReq,
-  });
+    soapReq
+  );
 
   const xmlResp = await resp.text();
 
@@ -236,14 +238,14 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   </soap:Body>
 </soap:Envelope>`;
 
-  const resp = await fetch(wsfeUrl, {
-    method: 'POST',
-    headers: {
+  const resp = await soapPost(
+    wsfeUrl,
+    {
       'Content-Type': 'text/xml; charset=utf-8',
       'SOAPAction': 'http://ar.gov.afip.dif.FEV1/FECAESolicitar',
     },
-    body: soapReq,
-  });
+    soapReq
+  );
 
   const xmlResp = await resp.text();
 

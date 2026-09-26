@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const forge = require('node-forge');
+const { soapPost } = require('./client');
 
 const WSDL_URLS = {
   homologacion: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
@@ -147,14 +148,14 @@ async function obtenerTokenSign(config) {
   </soapenv:Body>
 </soapenv:Envelope>`;
 
-  const resp = await fetch(wsaaUrl, {
-    method: 'POST',
-    headers: {
+  const resp = await soapPost(
+    wsaaUrl,
+    {
       'Content-Type': 'text/xml; charset=UTF-8',
       'SOAPAction': '',
     },
-    body: soapReq,
-  });
+    soapReq
+  );
 
   const xmlResp = await resp.text();
 
