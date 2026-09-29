@@ -36,6 +36,7 @@ function getFechaHoyArgentina() {
 }
 
 const contadoresMock = new Map();
+const ultimosEmitidosMemoria = new Map();
 
 /**
  * Consulta el estado de los servidores de ARCA (FEDummy: AppServer, DbServer, AuthServer).
@@ -148,13 +149,22 @@ async function consultarUltimoAutorizado({ ambiente, puntoVenta, cbteTipo, auth,
 async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   const cuitClean = String(emisor.cuit || '').replace(/[-\s]/g, '');
 
-  const ultimo = await consultarUltimoAutorizado({
+  let ultimo = await consultarUltimoAutorizado({
     ambiente,
     puntoVenta: emisor.puntoVenta,
     cbteTipo: emisor.cbteTipo,
     auth,
     cuit: cuitClean,
   });
+
+  // Protección anti-lag de replicación de ARCA:
+  // Si en la misma instancia ya autorizamos un comprobante superior al que devuelve
+  // la réplica de lectura de ARCA, avanzamos al correlativo real para evitar error [10016].
+  const clavePto = `${emisor.puntoVenta}-${emisor.cbteTipo}`;
+  const enMemoria = ultimosEmitidosMemoria.get(clavePto) || 0;
+  if (enMemoria > ultimo) {
+    ultimo = enMemoria;
+  }
   const numero = ultimo + 1;
 
   if (ambiente === 'mock') {
@@ -314,6 +324,9 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
     const raw = vtoMatch[1];
     vtoFormateado = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
   }
+
+  // Guardar en memoria el último comprobante autorizado con éxito
+  ultimosEmitidosMemoria.set(clavePto, numero);
 
   return {
     ok: true,

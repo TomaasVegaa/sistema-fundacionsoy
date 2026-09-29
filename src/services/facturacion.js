@@ -16,12 +16,12 @@ async function obtenerConfigArca(client) {
   return rows[0];
 }
 
+let loteEnProceso = false;
+
 /**
- * Factura una donacion puntual y, si sale bien, la refleja en caja.
- * Un error de ARCA en esta donacion NUNCA debe tirar abajo el resto del
- * lote: se captura y se deja la donacion en estado 'error_facturacion'.
+ * Ejecuta un intento de facturación de una donación puntual.
  */
-async function procesarDonacion(donacionId) {
+async function ejecutarProcesarDonacion(donacionId) {
   const client = await pool.connect();
   try {
     const { rows } = await client.query('SELECT * FROM donaciones WHERE id = $1', [donacionId]);
@@ -117,27 +117,69 @@ async function procesarDonacion(donacionId) {
 }
 
 /**
- * Procesa un lote completo de donaciones pendientes. Cada una se procesa
- * de forma independiente: un error nunca frena a las demas.
+ * Factura una donación puntual con auto-reintento inteligente si ARCA
+ * reporta error 10016 (número desfasado por replicación de servidores).
+ */
+async function procesarDonacion(donacionId) {
+  for (let intento = 1; intento <= 2; intento++) {
+    const res = await ejecutarProcesarDonacion(donacionId);
+    if (res.ok || intento === 2) {
+      return res;
+    }
+    const esError10016 = res.error && (res.error.includes('10016') || res.error.includes('proximo a autorizar'));
+    if (!esError10016) {
+      return res;
+    }
+    console.warn(`[ARCA] Error 10016 en donación ${donacionId}. Esperando 1500ms para sincronización de ARCA y reintentando automáticamente (intento 2)...`);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+}
+
+/**
+ * Procesa un lote completo de donaciones pendientes o con error previo.
+ * Cada una se procesa de forma independiente con pausas controladas para
+ * no saturar la réplica de ARCA.
  */
 async function procesarLotePendiente() {
-  const { rows } = await pool.query(
-    `SELECT id FROM donaciones WHERE estado = 'pendiente_facturacion' ORDER BY fecha ASC`
-  );
-
-  const resultados = [];
-  for (const { id } of rows) {
-    // eslint-disable-next-line no-await-in-loop
-    const r = await procesarDonacion(id);
-    resultados.push({ donacionId: id, ...r });
+  if (loteEnProceso) {
+    return {
+      total: 0,
+      exitosas: 0,
+      conError: 0,
+      yaEnProceso: true,
+      mensaje: 'Ya hay un lote de facturación en proceso.',
+      detalle: [],
+    };
   }
 
-  return {
-    total: resultados.length,
-    exitosas: resultados.filter((r) => r.ok).length,
-    conError: resultados.filter((r) => !r.ok).length,
-    detalle: resultados,
-  };
+  loteEnProceso = true;
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM donaciones 
+       WHERE estado IN ('pendiente_facturacion', 'error_facturacion') 
+       ORDER BY fecha ASC, id ASC`
+    );
+
+    const resultados = [];
+    for (const { id } of rows) {
+      // eslint-disable-next-line no-await-in-loop
+      const r = await procesarDonacion(id);
+      resultados.push({ donacionId: id, ...r });
+
+      // Pausa de 800ms entre comprobantes para permitir que el cluster de ARCA
+      // replique el nuevo número autorizado antes del siguiente comprobante
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+
+    return {
+      total: resultados.length,
+      exitosas: resultados.filter((r) => r.ok).length,
+      conError: resultados.filter((r) => !r.ok).length,
+      detalle: resultados,
+    };
+  } finally {
+    loteEnProceso = false;
+  }
 }
 
 module.exports = { procesarDonacion, procesarLotePendiente };

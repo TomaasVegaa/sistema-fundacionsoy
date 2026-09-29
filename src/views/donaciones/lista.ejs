@@ -1,5 +1,16 @@
 <%- include('../partials/header', { titulo: 'Donaciones', activeNav }) %>
 
+<% if (filtros && filtros.procesado) { %>
+  <div style="background: #eef8f3; border: 1px solid #c2e9d2; color: #1e5a3a; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    Lote procesado: <strong><%= filtros.ok || 0 %></strong> donación(es) facturada(s) con éxito
+    <% if (Number(filtros.error) > 0) { %>, <strong><%= filtros.error %></strong> con error (podés reintentarlas con el botón Reintentar o pulsando Facturar pendientes)<% } %>.
+  </div>
+<% } else if (filtros && filtros.en_proceso) { %>
+  <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    Ya hay un lote de facturación ejecutándose en segundo plano. Por favor esperá unos segundos y refrescá la página.
+  </div>
+<% } %>
+
 <div class="page-head">
   <div>
     <h1>Donaciones</h1>
@@ -7,7 +18,7 @@
   </div>
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
     <a href="/exportar/donaciones" class="btn btn--ghost">Exportar a Excel</a>
-    <form method="POST" action="/donaciones/procesar-lote">
+    <form method="POST" action="/donaciones/procesar-lote" onsubmit="deshabilitarBotonLote(this)">
       <button type="submit" class="btn btn--ghost">Facturar pendientes</button>
     </form>
     <a href="/donaciones/importar" class="btn btn--gold">Importar archivo</a>
@@ -52,7 +63,7 @@
             <% if (d.estado === 'facturada') { %>
               <a href="/donaciones/<%= d.id %>/factura.pdf" class="btn btn--ghost" style="padding:4px 9px; font-size:12px;" target="_blank" title="Ver Factura en PDF">PDF</a>
             <% } else if (d.estado === 'error_facturacion') { %>
-              <form method="POST" action="/donaciones/<%= d.id %>/reintentar" style="display:inline;">
+              <form method="POST" action="/donaciones/<%= d.id %>/reintentar" onsubmit="deshabilitarReintentar(this)" style="display:inline;">
                 <button type="submit" class="btn btn--ghost" style="padding:4px 9px; font-size:12px;">Reintentar</button>
               </form>
             <% } %>
@@ -64,5 +75,26 @@
 </div>
 
 <%- include('../partials/paginacion') %>
+
+<script>
+function deshabilitarBotonLote(form) {
+  const btn = form.querySelector('button');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerText = 'Facturando... por favor espere';
+  }
+}
+function deshabilitarReintentar(form) {
+  const btn = form.querySelector('button');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerText = 'Reintentando...';
+  }
+}
+</script>
 
 <%- include('../partials/footer') %>

@@ -175,6 +175,9 @@ router.post('/importar', upload.single('archivo'), async (req, res, next) => {
 router.post('/procesar-lote', async (req, res, next) => {
   try {
     const resultado = await procesarLotePendiente();
+    if (resultado.yaEnProceso) {
+      return res.redirect('/donaciones?en_proceso=1');
+    }
     res.redirect(
       `/donaciones?procesado=1&total=${resultado.total}&ok=${resultado.exitosas}&error=${resultado.conError}`
     );
