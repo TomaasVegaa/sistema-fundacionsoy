@@ -348,9 +348,10 @@ a { color: inherit; }
 .figures__value {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: 26px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .figures__value.gold { color: var(--gold); }

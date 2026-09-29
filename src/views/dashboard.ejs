@@ -12,22 +12,31 @@
   <div class="figures__item">
     <div class="figures__label">Saldo de caja</div>
     <div class="figures__value"><%= moneda(saldoActual) %></div>
+    <div style="font-size: 11px; color: var(--ink-soft); margin-top: 4px;">Donaciones + Rendimientos</div>
   </div>
   <div class="figures__item">
     <div class="figures__label">Total donado (facturado)</div>
     <div class="figures__value sage"><%= moneda(resumen.total_donado) %></div>
+    <div style="font-size: 11px; color: var(--sage); margin-top: 4px;">Facturado en ARCA</div>
   </div>
   <div class="figures__item">
     <div class="figures__label">Donantes distintos</div>
     <div class="figures__value"><%= resumen.cantidad_donantes %></div>
+    <div style="font-size: 11px; color: var(--ink-soft); margin-top: 4px;">Registrados en el sistema</div>
   </div>
   <div class="figures__item">
     <div class="figures__label">Facturas pendientes</div>
-    <div class="figures__value gold"><%= resumen.facturas_pendientes %></div>
+    <div class="figures__value <%= Number(resumen.facturas_pendientes) > 0 ? 'gold' : '' %>"><%= resumen.facturas_pendientes %></div>
+    <div style="font-size: 11px; color: <%= Number(resumen.facturas_pendientes) > 0 ? 'var(--gold)' : 'var(--sage)' %>; margin-top: 4px;">
+      <%= Number(resumen.facturas_pendientes) === 0 ? '✓ 0 por emitir' : 'Pendientes de envío' %>
+    </div>
   </div>
   <div class="figures__item">
     <div class="figures__label">Facturas con error</div>
-    <div class="figures__value rust"><%= resumen.facturas_error %></div>
+    <div class="figures__value <%= Number(resumen.facturas_error) > 0 ? 'rust' : '' %>"><%= resumen.facturas_error %></div>
+    <div style="font-size: 11px; color: <%= Number(resumen.facturas_error) > 0 ? 'var(--rust)' : 'var(--sage)' %>; margin-top: 4px;">
+      <%= Number(resumen.facturas_error) === 0 ? '✓ 0 con error' : 'Requieren reintento' %>
+    </div>
   </div>
 </div>
 
@@ -61,10 +70,19 @@
 <div class="section">
   <div class="section__head">
     <h2>Acciones pendientes</h2>
+    <% if (pendientes.length === 0 && errores.length === 0) { %>
+      <span style="font-size: 13px; color: var(--sage); font-weight: 600;">✓ Todo al día</span>
+    <% } %>
   </div>
 
   <% if (pendientes.length === 0 && errores.length === 0) { %>
-    <p style="color:var(--ink-soft); font-size:14px;">No hay donaciones pendientes ni facturas con error. Todo al día.</p>
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius); padding: 16px 20px; color: #166534; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 18px;">✓</span>
+      <div>
+        <strong>No hay donaciones pendientes ni facturas con error.</strong>
+        <div style="font-size: 12px; color: #15803d; margin-top: 2px;">Todas las donaciones importadas se encuentran 100% facturadas con CAE de ARCA.</div>
+      </div>
+    </div>
   <% } %>
 
   <% if (pendientes.length > 0) { %>
