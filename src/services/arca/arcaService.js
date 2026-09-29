@@ -39,11 +39,24 @@ async function emitirFacturaC(config, donacion, donante = null) {
     cbteTipo: config.cbte_tipo_default || 11,
   };
 
+  let condicionIvaId = null;
+  const condIva = donante && donante.condicion_iva ? String(donante.condicion_iva).toLowerCase() : '';
+  if (condIva === 'responsable_inscripto') {
+    condicionIvaId = 1;
+  } else if (condIva === 'iva_exento' || condIva === 'exento') {
+    condicionIvaId = 4;
+  } else if (condIva === 'monotributo') {
+    condicionIvaId = 6;
+  } else if (condIva === 'consumidor_final') {
+    condicionIvaId = 5;
+  }
+
   const comprobante = {
     monto: donacion.monto,
     docTipo,
     docNro,
     fecha: donacion.fecha,
+    condicionIvaId,
   };
 
   const resultado = await wsfe.solicitarCAE({ ambiente, auth, emisor, comprobante });

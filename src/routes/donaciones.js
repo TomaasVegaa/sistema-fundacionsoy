@@ -8,6 +8,7 @@ const { parsearArchivoMP } = require('../services/parserMP');
 const { procesarDonacion, procesarLotePendiente } = require('../services/facturacion');
 const { registrarIngresoFinanciero } = require('../services/caja');
 const { generarFacturaPDF } = require('../services/pdfFactura');
+const { consultarDatosPadron } = require('../services/arca/padron');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   const { rows } = await pool.query(
-    `SELECT d.*, don.nombre AS donante_nombre, don.email AS donante_email,
+    `SELECT d.*, don.nombre AS donante_nombre, don.email AS donante_email, don.cuit_dni AS donante_cuit,
             f.pdf_url,
             (SELECT error_detalle FROM facturas WHERE donacion_id = d.id ORDER BY id DESC LIMIT 1) AS error_detalle
      FROM donaciones d
@@ -62,6 +63,10 @@ router.post('/importar', upload.single('archivo'), async (req, res, next) => {
     try {
       await client.query('BEGIN');
 
+      const { rows: cRows } = await client.query('SELECT * FROM configuracion_arca WHERE id = 1');
+      const configArca = cRows[0] || {};
+      const padronCache = new Map();
+
       const rawImport = await client.query(
         `INSERT INTO raw_imports (nombre_archivo, formato, contenido_crudo, filas_totales)
          VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -82,26 +87,76 @@ router.post('/importar', upload.single('archivo'), async (req, res, next) => {
 
         let donanteId = null;
         if (fila.pagador_email || fila.pagador_cuit_dni || fila.pagador_nombre) {
+          const cuitLimpio = fila.pagador_cuit_dni ? String(fila.pagador_cuit_dni).replace(/\D/g, '') : null;
+          let condicionIva = 'consumidor_final';
+          let datosPadron = null;
+
+          if (cuitLimpio && cuitLimpio.length === 11) {
+            if (!padronCache.has(cuitLimpio)) {
+              try {
+                const resPadron = await consultarDatosPadron(cuitLimpio, configArca);
+                padronCache.set(cuitLimpio, resPadron);
+              } catch (ePadron) {
+                console.warn(`[Padron ARCA] Error consultando CUIT ${cuitLimpio}:`, ePadron.message);
+                padronCache.set(cuitLimpio, { ok: false });
+              }
+            }
+
+            datosPadron = padronCache.get(cuitLimpio);
+            if (datosPadron && datosPadron.ok) {
+              if (datosPadron.nombre) {
+                fila.pagador_nombre = datosPadron.nombre;
+              }
+              if (datosPadron.condicion_iva) {
+                condicionIva = datosPadron.condicion_iva;
+              }
+            } else if (cuitLimpio.startsWith('30') || cuitLimpio.startsWith('33') || cuitLimpio.startsWith('34')) {
+              condicionIva = 'responsable_inscripto';
+            }
+          }
+
           const previo = await client.query(
-            `SELECT id, es_recurrente FROM donantes
+            `SELECT id, es_recurrente, nombre, condicion_iva, cuit_dni FROM donantes
              WHERE (email IS NOT NULL AND email = $1)
-                OR (cuit_dni IS NOT NULL AND cuit_dni = $2)
-                OR (nombre IS NOT NULL AND nombre = $3 AND $3 IS NOT NULL)
+                OR (cuit_dni IS NOT NULL AND (cuit_dni = $2 OR regexp_replace(cuit_dni, '\\D', '', 'g') = $3))
+                OR (nombre IS NOT NULL AND nombre = $4 AND $4 IS NOT NULL)
              LIMIT 1`,
-            [fila.pagador_email, fila.pagador_cuit_dni, fila.pagador_nombre]
+            [fila.pagador_email, fila.pagador_cuit_dni, cuitLimpio, fila.pagador_nombre]
           );
 
           if (previo.rows.length > 0) {
             donanteId = previo.rows[0].id;
-            if (!previo.rows[0].es_recurrente) {
-              await client.query('UPDATE donantes SET es_recurrente = TRUE WHERE id = $1', [donanteId]);
+            const dExistente = previo.rows[0];
+
+            const nombreEsPlaceholder = !dExistente.nombre || dExistente.nombre === 'Transferencia Bancaria' || dExistente.nombre.startsWith('TRANSF:');
+            const actualizarNombre = fila.pagador_nombre && (nombreEsPlaceholder || (datosPadron && datosPadron.ok));
+            const actualizarCond = condicionIva && (dExistente.condicion_iva === 'consumidor_final' || !dExistente.condicion_iva);
+            const actualizarCuit = cuitLimpio && !dExistente.cuit_dni;
+
+            if (actualizarNombre || actualizarCond || actualizarCuit || !dExistente.es_recurrente) {
+              await client.query(
+                `UPDATE donantes
+                 SET nombre = CASE WHEN $1 THEN $2 ELSE nombre END,
+                     condicion_iva = CASE WHEN $3 THEN $4 ELSE condicion_iva END,
+                     cuit_dni = CASE WHEN $5 THEN $6 ELSE cuit_dni END,
+                     es_recurrente = TRUE
+                 WHERE id = $7`,
+                [
+                  Boolean(actualizarNombre), fila.pagador_nombre || dExistente.nombre,
+                  Boolean(actualizarCond), condicionIva || dExistente.condicion_iva,
+                  Boolean(actualizarCuit), fila.pagador_cuit_dni || dExistente.cuit_dni,
+                  donanteId,
+                ]
+              );
             }
             recurrentesDetectadas += 1;
             fila.tipo = 'donacion_recurrente';
           } else {
             const nuevoDonante = await client.query(
-              `INSERT INTO donantes (nombre, cuit_dni, email) VALUES ($1,$2,$3) RETURNING id`,
-              [fila.pagador_nombre, fila.pagador_cuit_dni, fila.pagador_email]
+              `INSERT INTO donantes (nombre, cuit_dni, email, condicion_iva)
+               VALUES ($1, $2, $3, $4)
+               RETURNING id`,
+              [fila.pagador_nombre, fila.pagador_cuit_dni, fila.pagador_email, condicionIva]
             );
             donanteId = nuevoDonante.rows[0].id;
           }
@@ -219,6 +274,32 @@ router.get('/:id/factura.pdf', async (req, res, next) => {
 
     const cRes = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
     const config = cRes.rows[0] || {};
+
+    if (donante && donante.cuit_dni && config && config.ambiente !== 'mock') {
+      const cuitClean = String(donante.cuit_dni).replace(/\D/g, '');
+      const nombreIncompleto = !donante.nombre || donante.nombre === 'Transferencia Bancaria' || donante.nombre.startsWith('TRANSF:');
+      const condIncompleta = !donante.condicion_iva || donante.condicion_iva === 'consumidor_final';
+
+      if (cuitClean.length === 11 && (nombreIncompleto || condIncompleta)) {
+        try {
+          const resPadron = await consultarDatosPadron(cuitClean, config);
+          if (resPadron && resPadron.ok) {
+            if (resPadron.nombre && (nombreIncompleto || !donante.nombre)) {
+              donante.nombre = resPadron.nombre;
+            }
+            if (resPadron.condicion_iva) {
+              donante.condicion_iva = resPadron.condicion_iva;
+            }
+            await pool.query(
+              'UPDATE donantes SET nombre = $1, condicion_iva = $2 WHERE id = $3',
+              [donante.nombre, donante.condicion_iva, donante.id]
+            );
+          }
+        } catch (e) {
+          console.warn(`[PDF] No se pudo actualizar datos de padrón para donante ${donante.id}:`, e.message);
+        }
+      }
+    }
 
     const donacion = {
       id: factura.donacion_id,

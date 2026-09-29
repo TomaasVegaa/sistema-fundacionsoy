@@ -44,7 +44,12 @@
       <% donaciones.forEach(d => { %>
         <tr>
           <td><%= fecha(d.fecha) %></td>
-          <td><%= d.donante_nombre || 'Sin identificar' %></td>
+          <td>
+            <div style="font-weight: 500;"><%= d.donante_nombre || 'Sin identificar' %></div>
+            <% if (d.donante_cuit) { %>
+              <div style="font-size: 11px; color: #64748b; font-family: monospace; margin-top: 2px;"><%= d.donante_cuit %></div>
+            <% } %>
+          </td>
           <td><%= d.tipo === 'donacion_recurrente' ? 'Recurrente' : 'Puntual' %></td>
           <td class="money"><%= moneda(d.monto) %></td>
           <td>

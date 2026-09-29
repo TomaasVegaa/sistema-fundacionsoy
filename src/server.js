@@ -146,6 +146,48 @@ async function inicializarBaseDeDatos() {
   } catch (err) {
     console.error('Error al vaciar base de datos de prueba:', err.message || err);
   }
+
+  // 4. Actualizar donantes existentes que tengan CUIT con datos oficiales del Padrón ARCA
+  try {
+    const { rows: cRows } = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
+    const config = cRows[0];
+    if (config && (config.ambiente === 'produccion' || config.ambiente === 'homologacion')) {
+      const { rows: donantesConCuit } = await pool.query(`
+        SELECT id, cuit_dni, nombre, condicion_iva 
+        FROM donantes 
+        WHERE cuit_dni IS NOT NULL 
+          AND length(regexp_replace(cuit_dni, '\\D', '', 'g')) = 11
+      `);
+
+      if (donantesConCuit.length > 0) {
+        const { consultarDatosPadron } = require('./services/arca/padron');
+        for (const d of donantesConCuit) {
+          const cuitClean = String(d.cuit_dni).replace(/\D/g, '');
+          const nombreIncompleto = !d.nombre || d.nombre === 'Transferencia Bancaria' || d.nombre.startsWith('TRANSF:');
+          const condIncompleta = !d.condicion_iva || d.condicion_iva === 'consumidor_final';
+
+          if (nombreIncompleto || condIncompleta) {
+            try {
+              const resPadron = await consultarDatosPadron(cuitClean, config);
+              if (resPadron && resPadron.ok) {
+                const nuevoNombre = resPadron.nombre || d.nombre;
+                const nuevaCond = resPadron.condicion_iva || d.condicion_iva;
+                await pool.query(
+                  'UPDATE donantes SET nombre = $1, condicion_iva = $2 WHERE id = $3',
+                  [nuevoNombre, nuevaCond, d.id]
+                );
+                console.log(`✓ Donante ID ${d.id} (${cuitClean}) actualizado con Padrón ARCA: ${nuevoNombre} [${nuevaCond}]`);
+              }
+            } catch (errPadron) {
+              console.warn(`Aviso al actualizar donante CUIT ${cuitClean}:`, errPadron.message);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Aviso al actualizar donantes con padrón:', err.message || err);
+  }
 }
 
 app.listen(PORT, async () => {

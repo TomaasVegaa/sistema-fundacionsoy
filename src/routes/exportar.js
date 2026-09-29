@@ -17,6 +17,7 @@ router.get('/donaciones', async (req, res) => {
 
   const { rows } = await pool.query(
     `SELECT d.*, don.nombre AS donante_nombre, don.email AS donante_email,
+            don.cuit_dni AS donante_cuit, don.condicion_iva AS donante_condicion_iva,
             f.cae, f.numero_comprobante, f.punto_venta
      FROM donaciones d
      LEFT JOIN donantes don ON don.id = d.donante_id
@@ -26,10 +27,19 @@ router.get('/donaciones', async (req, res) => {
     valores
   );
 
+  const COND_LABELS = {
+    responsable_inscripto: 'IVA Responsable Inscripto',
+    iva_exento: 'IVA Exento',
+    monotributo: 'Responsable Monotributo',
+    consumidor_final: 'Consumidor Final',
+  };
+
   const wb = XLSX.utils.book_new();
   const data = rows.map(r => ({
     Fecha: dayjs(r.fecha).format('DD/MM/YYYY'),
     Donante: r.donante_nombre || 'Sin identificar',
+    'CUIT / DNI': r.donante_cuit || '',
+    'Condición IVA': COND_LABELS[r.donante_condicion_iva] || r.donante_condicion_iva || 'Consumidor Final',
     Email: r.donante_email || '',
     Tipo: r.tipo === 'donacion_recurrente' ? 'Recurrente' : 'Puntual',
     Monto: Number(r.monto),
@@ -42,7 +52,7 @@ router.get('/donaciones', async (req, res) => {
   const ws = XLSX.utils.json_to_sheet(data);
   // Ancho de columnas
   ws['!cols'] = [
-    { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 12 },
+    { wch: 12 }, { wch: 32 }, { wch: 18 }, { wch: 24 }, { wch: 26 }, { wch: 12 },
     { wch: 14 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 16 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Donaciones');

@@ -38,6 +38,35 @@ async function ejecutarProcesarDonacion(donacionId) {
       donante = dRows[0] || null;
     }
 
+    // Si el donante tiene CUIT y tiene nombre genérico o condición por defecto,
+    // consultar el Padrón ARCA para obtener Razón Social oficial y Condición IVA real.
+    if (donante && donante.cuit_dni && config && config.ambiente !== 'mock') {
+      const cuitClean = String(donante.cuit_dni).replace(/\D/g, '');
+      const nombreIncompleto = !donante.nombre || donante.nombre === 'Transferencia Bancaria' || donante.nombre.startsWith('TRANSF:');
+      const condicionPorDefecto = !donante.condicion_iva || donante.condicion_iva === 'consumidor_final';
+
+      if (cuitClean.length === 11 && (nombreIncompleto || condicionPorDefecto)) {
+        try {
+          const { consultarDatosPadron } = require('./arca/padron');
+          const pRes = await consultarDatosPadron(cuitClean, config);
+          if (pRes && pRes.ok) {
+            if (pRes.nombre && (nombreIncompleto || !donante.nombre)) {
+              donante.nombre = pRes.nombre;
+            }
+            if (pRes.condicion_iva) {
+              donante.condicion_iva = pRes.condicion_iva;
+            }
+            await client.query(
+              'UPDATE donantes SET nombre = $1, condicion_iva = $2 WHERE id = $3',
+              [donante.nombre, donante.condicion_iva, donante.id]
+            );
+          }
+        } catch (padronErr) {
+          console.warn(`[Facturacion] No se pudo consultar padrón para CUIT ${cuitClean}:`, padronErr.message);
+        }
+      }
+    }
+
     try {
       const resultado = await arcaService.emitirFacturaC(config, donacion, donante);
 

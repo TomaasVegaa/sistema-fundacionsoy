@@ -12,10 +12,11 @@ const WSDL_URLS = {
   produccion: 'https://wsaa.afip.gov.ar/ws/services/LoginCms',
 };
 
-let cache = null; // { token, sign, expiraEn, ambiente }
+const cacheTickets = new Map(); // key: `${servicio}-${ambiente}`
 
-function tokenVigente(ambiente) {
-  return cache && cache.ambiente === ambiente && cache.expiraEn > Date.now();
+function tokenVigente(servicio, ambiente) {
+  const c = cacheTickets.get(`${servicio}-${ambiente}`);
+  return c && c.expiraEn > Date.now();
 }
 
 function generarTRA(servicio = 'wsfe') {
@@ -90,22 +91,25 @@ function firmarCMS(traXml, certPemOrPath, keyPemOrPath) {
 /**
  * Devuelve { token, sign }, obteniendolos de ARCA o del cache/mock segun corresponda.
  * @param {object} config - fila de configuracion_arca
+ * @param {string} servicio - 'wsfe' | 'ws_sr_constancia_inscripcion'
  */
-async function obtenerTokenSign(config) {
+async function obtenerTokenSign(config, servicio = 'wsfe') {
   const ambiente = config.ambiente || 'mock';
 
-  if (tokenVigente(ambiente)) {
-    return { token: cache.token, sign: cache.sign };
+  if (tokenVigente(servicio, ambiente)) {
+    const c = cacheTickets.get(`${servicio}-${ambiente}`);
+    return { token: c.token, sign: c.sign };
   }
 
   if (ambiente === 'mock') {
-    cache = {
+    const mockTicket = {
       token: 'MOCK-TOKEN-' + Date.now(),
       sign: 'MOCK-SIGN-' + Date.now(),
       expiraEn: Date.now() + 11 * 60 * 60 * 1000,
       ambiente: 'mock',
     };
-    return { token: cache.token, sign: cache.sign };
+    cacheTickets.set(`${servicio}-${ambiente}`, mockTicket);
+    return { token: mockTicket.token, sign: mockTicket.sign };
   }
 
   const wsaaUrl = WSDL_URLS[ambiente];
@@ -135,7 +139,7 @@ async function obtenerTokenSign(config) {
     throw new Error('No se encontró la clave privada de ARCA (.key). Verificá la configuración.');
   }
 
-  const tra = generarTRA('wsfe');
+  const tra = generarTRA(servicio);
   const cms = firmarCMS(tra, certPem, keyPem);
 
   const soapReq = `<?xml version="1.0" encoding="UTF-8"?>
@@ -194,12 +198,12 @@ async function obtenerTokenSign(config) {
     }
   }
 
-  cache = { token, sign, expiraEn, ambiente };
+  cacheTickets.set(`${servicio}-${ambiente}`, { token, sign, expiraEn, ambiente, servicio });
   return { token, sign };
 }
 
 function limpiarCache() {
-  cache = null;
+  cacheTickets.clear();
 }
 
 module.exports = {
