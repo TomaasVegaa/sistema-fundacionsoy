@@ -104,9 +104,15 @@ function parsearRespuestaPadron(xmlResp) {
  * @returns {Promise<{ ok: boolean, nombre?: string, condicion_iva?: string, domicilio?: string, error?: string }>}
  */
 async function consultarDatosPadron(cuitConsultar, config) {
-  const cuitClean = String(cuitConsultar || '').replace(/[-\s]/g, '');
+  const cuitClean = String(cuitConsultar || '').replace(/\D/g, '');
+  if (cuitClean.length === 7 || cuitClean.length === 8) {
+    return {
+      ok: false,
+      error: `Ingresaste un DNI (${cuitClean}). El Padrón oficial de ARCA requiere el CUIT/CUIL completo de 11 dígitos (por ejemplo: 20-${cuitClean}-X o 27-${cuitClean}-X).`,
+    };
+  }
   if (!cuitClean || cuitClean.length !== 11) {
-    return { ok: false, error: 'CUIT inválido (debe tener 11 dígitos).' };
+    return { ok: false, error: 'CUIT inválido (debe tener exactamente 11 dígitos numéricos).' };
   }
 
   const ambiente = config.ambiente || 'produccion';
