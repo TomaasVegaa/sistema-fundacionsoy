@@ -7,6 +7,7 @@ const pool = require('../db/pool');
 const { validar, validarCUIT } = require('../middleware/validators');
 const wsaa = require('../services/arca/wsaa');
 const wsfe = require('../services/arca/wsfe');
+const { consultarDatosPadron } = require('../services/arca/padron');
 const { limpiarCache } = wsaa;
 
 const router = express.Router();
@@ -139,6 +140,35 @@ router.post('/test-conexion', async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+});
+
+router.post('/consultar-padron', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
+  try {
+    const cuit = req.body.cuit || req.query.cuit;
+    if (!cuit) {
+      return res.status(400).json({ ok: false, error: 'Debe ingresar un CUIT para consultar.' });
+    }
+
+    const { rows } = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
+    const config = rows[0] || {};
+
+    const resultado = await consultarDatosPadron(cuit, config);
+
+    const COND_LABELS = {
+      responsable_inscripto: 'IVA Responsable Inscripto',
+      iva_exento: 'IVA Exento',
+      monotributo: 'Responsable Monotributo',
+      consumidor_final: 'Consumidor Final',
+    };
+
+    if (resultado.ok) {
+      resultado.condicion_iva_desc = COND_LABELS[resultado.condicion_iva] || resultado.condicion_iva;
+    }
+
+    res.json(resultado);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
