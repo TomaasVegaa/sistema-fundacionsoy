@@ -17,13 +17,26 @@ async function obtenerConfigArca(client) {
 }
 
 let loteEnProceso = false;
+const donacionesEnProceso = new Set();
 
 /**
  * Ejecuta un intento de facturación de una donación puntual.
  */
 async function ejecutarProcesarDonacion(donacionId) {
+  if (donacionesEnProceso.has(donacionId)) {
+    return { ok: false, yaEnProceso: true, error: 'Esta donación ya se está procesando actualmente.' };
+  }
+  donacionesEnProceso.add(donacionId);
+
   const client = await pool.connect();
+  let lockAdquirido = false;
   try {
+    const lockRes = await client.query('SELECT pg_try_advisory_lock(54321, $1) AS locked', [donacionId]);
+    lockAdquirido = !!lockRes.rows[0]?.locked;
+    if (!lockAdquirido) {
+      return { ok: false, yaEnProceso: true, error: 'La donación ya se está procesando en otra instancia.' };
+    }
+
     const { rows } = await client.query('SELECT * FROM donaciones WHERE id = $1', [donacionId]);
     const donacion = rows[0];
     if (!donacion) throw new Error(`Donacion ${donacionId} no encontrada`);
@@ -141,6 +154,10 @@ async function ejecutarProcesarDonacion(donacionId) {
       return { ok: false, error: errArca.message };
     }
   } finally {
+    if (lockAdquirido) {
+      await client.query('SELECT pg_advisory_unlock(54321, $1)', [donacionId]).catch(() => {});
+    }
+    donacionesEnProceso.delete(donacionId);
     client.release();
   }
 }

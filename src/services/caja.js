@@ -8,6 +8,17 @@ async function saldoActual(client) {
 }
 
 async function registrarIngreso(client, { monto, fecha, referencia_tipo, referencia_id }) {
+  if (referencia_tipo === 'donacion' && referencia_id) {
+    const { rows: existRows } = await client.query(
+      'SELECT id FROM caja_movimientos WHERE referencia_tipo = $1 AND referencia_id = $2',
+      [referencia_tipo, referencia_id]
+    );
+    if (existRows.length > 0) {
+      console.warn(`[Caja] Ya existe movimiento de caja para ${referencia_tipo} #${referencia_id}. Omitiendo duplicado.`);
+      return await saldoActual(client);
+    }
+  }
+
   const saldoPrevio = await saldoActual(client);
   const nuevoSaldo = saldoPrevio + Number(monto);
   await client.query(

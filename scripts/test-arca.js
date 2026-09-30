@@ -69,15 +69,24 @@ async function ejecutarDiagnostico() {
   // 4. WSFE
   console.log('\n[4/4] Consultando Punto de Venta 2 en ARCA (FECompUltimoAutorizado)...');
   try {
-    const ultimo = await wsfe.consultarUltimoAutorizado({
+    const ultimo11 = await wsfe.consultarUltimoAutorizado({
       ambiente: 'produccion',
       puntoVenta: 2,
       cbteTipo: 11,
       auth,
       cuit: config.cuit_emisor,
     });
-    console.log(`  ✓ Último comprobante autorizado en ARCA: #${ultimo}`);
-    console.log(`  ✓ Próxima Factura C a emitir legalmente: #${ultimo + 1}`);
+    console.log(`  ✓ Última Factura C (tipo 11) en ARCA: #${ultimo11}`);
+
+    const ultimo15 = await wsfe.consultarUltimoAutorizado({
+      ambiente: 'produccion',
+      puntoVenta: 2,
+      cbteTipo: 15,
+      auth,
+      cuit: config.cuit_emisor,
+    });
+    console.log(`  ✓ Último Recibo C (tipo 15) en ARCA: #${ultimo15}`);
+    console.log(`  ✓ Próximo Recibo C a emitir legalmente: #${ultimo15 + 1}`);
   } catch (err) {
     console.error('  ❌ Error consultando punto de venta en WSFE:', err.message);
     process.exit(1);

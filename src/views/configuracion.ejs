@@ -111,7 +111,7 @@
         <div style="background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 14px;">
           <div style="font-weight: 600; color: #15803d; margin-bottom: 4px;">3. Punto de Venta <%= String(testConexion.puntoVenta).padStart(5, '0') %> (WSFE)</div>
           <div>Último comprobante: <strong>#<%= testConexion.ultimoAutorizado %></strong></div>
-          <div>Próximo a emitir: <strong style="color: #15803d;">#<%= testConexion.proximoComprobante %> (Factura C)</strong></div>
+          <div>Próximo a emitir: <strong style="color: #15803d;">#<%= testConexion.proximoComprobante %> (<%= Number(config.cbte_tipo_default) === 15 ? 'Recibo C' : 'Factura C' %>)</strong></div>
         </div>
       </div>
 
@@ -376,9 +376,10 @@ if (document.readyState === 'loading') {
       <input type="text" name="razon_social" id="razon_social" value="<%= config.razon_social || 'FUNDACION SOI (SERVICIO ONCOLOGICO INFANTIL)' %>">
     </div>
     <div class="field">
-      <label for="cbte_tipo_default">Tipo de Comprobante</label>
+      <label for="cbte_tipo_default">Tipo de Comprobante por Defecto</label>
       <select name="cbte_tipo_default" id="cbte_tipo_default">
-        <option value="11" selected>Factura C (Código 11 - Exento en IVA)</option>
+        <option value="15" <%= Number(config.cbte_tipo_default) === 15 ? 'selected' : '' %>>Recibo C (Código 15 - Donaciones / Entidades Exentas)</option>
+        <option value="11" <%= Number(config.cbte_tipo_default) === 11 || !config.cbte_tipo_default ? 'selected' : '' %>>Factura C (Código 11 - Exento en IVA)</option>
       </select>
     </div>
   </div>

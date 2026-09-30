@@ -6,7 +6,20 @@ const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 
 const TIPO_COMPROBANTE = {
-  1: 'A', 2: 'A', 3: 'A', 6: 'B', 7: 'B', 8: 'B', 11: 'C', 12: 'C', 13: 'C',
+  1: 'A', 2: 'A', 3: 'A', 6: 'B', 7: 'B', 8: 'B', 11: 'C', 12: 'C', 13: 'C', 15: 'C',
+};
+
+const TIPO_COMPROBANTE_TITULO = {
+  1: 'FACTURA A',
+  2: 'NOTA DE DÉBITO A',
+  3: 'NOTA DE CRÉDITO A',
+  6: 'FACTURA B',
+  7: 'NOTA DE DÉBITO B',
+  8: 'NOTA DE CRÉDITO B',
+  11: 'FACTURA C',
+  12: 'NOTA DE DÉBITO C',
+  13: 'NOTA DE CRÉDITO C',
+  15: 'RECIBO C',
 };
 
 function pad(n, len) {
@@ -144,8 +157,9 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
        .text(`Domicilio: ${domicilio}`, margin, 109, { width: centerX - margin - 30 });
 
     // Lado derecho: datos del comprobante
+    const tituloCbte = TIPO_COMPROBANTE_TITULO[factura.cbte_tipo] || `COMPROBANTE ${letra}`;
     doc.fontSize(13).font('Helvetica-Bold')
-       .text(`FACTURA ${letra}`, pageW - margin - 220, 58, { width: 220, align: 'right' });
+       .text(tituloCbte, pageW - margin - 220, 58, { width: 220, align: 'right' });
     doc.fontSize(9.5).font('Helvetica')
        .text(`Punto de Venta: ${pad(factura.punto_venta, 5)}  Comp. Nro: ${pad(factura.numero_comprobante, 8)}`, pageW - margin - 250, 78, { width: 250, align: 'right' })
        .text(`Fecha de Emisión: ${formatDate(factura.emitida_en || new Date())}`, pageW - margin - 220, 93, { width: 220, align: 'right' })

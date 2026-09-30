@@ -287,7 +287,7 @@ router.post(
          WHERE id = 1`,
         [
           punto_venta || 2,
-          cbte_tipo_default || 11,
+          parseInt(cbte_tipo_default, 10) || 15,
           cuit_emisor || '30-71916016-2',
           ambiente,
           certificado_path || './secrets/arca.crt',
