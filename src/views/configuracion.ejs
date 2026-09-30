@@ -196,6 +196,7 @@
     <div style="display: flex; gap: 6px;">
       <button
         type="button"
+        id="btnEjemploEmpresa"
         onclick="window.cargarEjemplo('33715513019')"
         class="btn btn--ghost"
         style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1; cursor: pointer;"
@@ -205,6 +206,7 @@
       </button>
       <button
         type="button"
+        id="btnEjemploParticular"
         onclick="window.cargarEjemplo('27255428492')"
         class="btn btn--ghost"
         style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1; cursor: pointer;"
@@ -307,6 +309,30 @@ window.realizarConsultaPadron = async function(e) {
     btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Consultar Padrón ARCA</span>';
   }
 };
+
+function iniciarBindingsPadron() {
+  var btn = document.getElementById('btnConsultarPadron');
+  var btnEmp = document.getElementById('btnEjemploEmpresa');
+  var btnPart = document.getElementById('btnEjemploParticular');
+  var input = document.getElementById('cuitPadronInput');
+
+  if (btn) btn.addEventListener('click', function() { window.realizarConsultaPadron(); });
+  if (btnEmp) btnEmp.addEventListener('click', function() { window.cargarEjemplo('33715513019'); });
+  if (btnPart) btnPart.addEventListener('click', function() { window.cargarEjemplo('27255428492'); });
+  if (input) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        window.realizarConsultaPadron();
+      }
+    });
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarBindingsPadron);
+} else {
+  iniciarBindingsPadron();
+}
 </script>
 
 <% if (config.ambiente === 'mock') { %>
