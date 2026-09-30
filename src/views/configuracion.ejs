@@ -171,22 +171,21 @@
     </span>
   </div>
 
-  <form id="formConsultaPadron" action="javascript:void(0);" onsubmit="realizarConsultaPadron(event); return false;" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
+  <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
     <div style="flex: 1; min-width: 250px;">
       <input
         type="text"
         id="cuitPadronInput"
-        placeholder="Ingresá CUIT: ej. 33-71551301-9 o 27-13784064-8"
+        placeholder="Ingresá CUIT: ej. 27255428492 o 33-71551301-9"
         class="form-control"
         style="width: 100%; font-family: monospace; font-size: 14px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;"
         value=""
-        onkeydown="if(event.key === 'Enter'){ event.preventDefault(); realizarConsultaPadron(event); }"
-        required
+        onkeydown="if(event.key === 'Enter'){ event.preventDefault(); window.realizarConsultaPadron(); }"
       />
     </div>
     <button
       type="button"
-      onclick="realizarConsultaPadron(event)"
+      onclick="window.realizarConsultaPadron()"
       id="btnConsultarPadron"
       class="btn btn--gold"
       style="font-size: 13px; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer;"
@@ -197,28 +196,118 @@
     <div style="display: flex; gap: 6px;">
       <button
         type="button"
-        onclick="cargarEjemplo('33715513019')"
+        onclick="window.cargarEjemplo('33715513019')"
         class="btn btn--ghost"
-        style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1;"
+        style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1; cursor: pointer;"
         title="Probar con LOS CHECHENOS S.R.L. (Empresa Responsable Inscripto)"
       >
         Ejemplo Empresa (SRL)
       </button>
       <button
         type="button"
-        onclick="cargarEjemplo('27137840648')"
+        onclick="window.cargarEjemplo('27255428492')"
         class="btn btn--ghost"
-        style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1;"
-        title="Probar con Particular (Exenta)"
+        style="font-size: 12px; padding: 7px 11px; border-color: #cbd5e1; cursor: pointer;"
+        title="Probar con JEREZ DEL CAMPO LORENA"
       >
         Ejemplo Particular
       </button>
     </div>
-  </form>
+  </div>
 
   <!-- RESULTADO EN TIEMPO REAL -->
   <div id="contenedorResultadoPadron" style="display: none; margin-top: 14px; border-top: 1px dashed #cbd5e1; padding-top: 14px;"></div>
 </div>
+
+<script>
+window.cargarEjemplo = function(cuit) {
+  var input = document.getElementById('cuitPadronInput');
+  if (input) {
+    input.value = cuit;
+  }
+  window.realizarConsultaPadron();
+};
+
+window.realizarConsultaPadron = async function(e) {
+  if (e && typeof e.preventDefault === 'function') {
+    e.preventDefault();
+  }
+  var input = document.getElementById('cuitPadronInput');
+  var btn = document.getElementById('btnConsultarPadron');
+  var cont = document.getElementById('contenedorResultadoPadron');
+  if (!input || !btn || !cont) return;
+
+  var cuit = input.value.trim();
+  if (!cuit) {
+    alert('Por favor ingresá un número de CUIT');
+    input.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.innerHTML = '<span>Consultando ARCA...</span>';
+
+  cont.style.display = 'block';
+  cont.innerHTML = '<div style="font-size: 13px; color: #64748b; padding: 10px 0;">Conectando con el Padrón oficial de ARCA para CUIT <strong>' + cuit + '</strong>...</div>';
+
+  try {
+    var res = await fetch('/configuracion/consultar-padron', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cuit: cuit }),
+    });
+    var data = await res.json();
+
+    if (!data.ok) {
+      cont.innerHTML = '<div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 14px; color: #991b1b; font-size: 13px;"><strong>Aviso de ARCA:</strong> ' + (data.error || 'No se pudieron recuperar datos para ese CUIT.') + '</div>';
+    } else {
+      var condColor = data.condicion_iva === 'responsable_inscripto' ? '#166534' :
+                      data.condicion_iva === 'iva_exento' ? '#1e40af' :
+                      data.condicion_iva === 'monotributo' ? '#854d0e' : '#475569';
+      var condBg = data.condicion_iva === 'responsable_inscripto' ? '#dcfce7' :
+                   data.condicion_iva === 'iva_exento' ? '#dbeafe' :
+                   data.condicion_iva === 'monotributo' ? '#fef9c3' : '#f1f5f9';
+
+      cont.innerHTML = 
+        '<div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">' +
+            '<div>' +
+              '<div style="font-size: 16px; font-weight: 700; color: #0f172a;">' + (data.nombre || 'Sin nombre registrado') + '</div>' +
+              '<div style="font-size: 12px; color: #64748b; font-family: monospace; margin-top: 3px;">CUIT: ' + data.cuit + '</div>' +
+            '</div>' +
+            '<span style="font-size: 12px; font-weight: 700; color: ' + condColor + '; background: ' + condBg + '; padding: 4px 10px; border-radius: 999px;">' +
+              (data.condicion_iva_desc || data.condicion_iva) +
+            '</span>' +
+          '</div>' +
+          '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12.5px; border-top: 1px solid #e2e8f0; padding-top: 12px;">' +
+            '<div>' +
+              '<span style="color: #64748b;">Tipo de Persona:</span>' +
+              '<strong style="color: #1e293b; display: block; margin-top: 2px;">' + (data.tipoPersona || 'N/A') + '</strong>' +
+            '</div>' +
+            '<div>' +
+              '<span style="color: #64748b;">Estado de la Clave:</span>' +
+              '<strong style="color: #16a34a; display: block; margin-top: 2px;">' + (data.estadoClave || 'ACTIVO') + '</strong>' +
+            '</div>' +
+            '<div style="grid-column: 1 / -1;">' +
+              '<span style="color: #64748b;">Domicilio Fiscal Registrado en ARCA:</span>' +
+              '<div style="color: #1e293b; font-weight: 500; margin-top: 2px;">' + (data.domicilio || 'No especificado') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top: 12px; font-size: 11.5px; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
+            '<span>✓ Datos oficiales obtenidos en tiempo real de ARCA (ws_sr_constancia_inscripcion) sin facturar ni alterar registros.</span>' +
+          '</div>' +
+        '</div>';
+    }
+  } catch (err) {
+    cont.innerHTML = '<div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 14px; color: #991b1b; font-size: 13px;">Error de conexión: ' + err.message + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Consultar Padrón ARCA</span>';
+  }
+};
+</script>
 
 <% if (config.ambiente === 'mock') { %>
   <div class="aviso">
@@ -307,112 +396,4 @@
     </button>
   </form>
 </div>
-
-<script>
-function cargarEjemplo(cuit) {
-  const input = document.getElementById('cuitPadronInput');
-  input.value = cuit;
-  document.getElementById('formConsultaPadron').dispatchEvent(new Event('submit'));
-}
-
-async function realizarConsultaPadron(e) {
-  e.preventDefault();
-  const input = document.getElementById('cuitPadronInput');
-  const btn = document.getElementById('btnConsultarPadron');
-  const cont = document.getElementById('contenedorResultadoPadron');
-  const cuit = input.value.trim();
-
-  if (!cuit) return;
-
-  btn.disabled = true;
-  btn.style.opacity = '0.7';
-  btn.innerHTML = `
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="0.8"></path></svg>
-    <span>Consultando ARCA...</span>
-  `;
-
-  cont.style.display = 'block';
-  cont.innerHTML = `
-    <div style="font-size: 13px; color: #64748b; padding: 10px 0; display: flex; align-items: center; gap: 8px;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-      Conectando con el Padrón oficial de ARCA para CUIT <strong>${cuit}</strong>...
-    </div>
-  `;
-
-  try {
-    const res = await fetch('/configuracion/consultar-padron', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cuit }),
-    });
-    const data = await res.json();
-
-    if (!data.ok) {
-      cont.innerHTML = `
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 14px; color: #991b1b; font-size: 13px;">
-          <strong>Aviso de ARCA:</strong> ${data.error || 'No se pudieron recuperar datos para ese CUIT.'}
-        </div>
-      `;
-    } else {
-      const condColor = data.condicion_iva === 'responsable_inscripto' ? '#166534' :
-                        data.condicion_iva === 'iva_exento' ? '#1e40af' :
-                        data.condicion_iva === 'monotributo' ? '#854d0e' : '#475569';
-      const condBg = data.condicion_iva === 'responsable_inscripto' ? '#dcfce7' :
-                     data.condicion_iva === 'iva_exento' ? '#dbeafe' :
-                     data.condicion_iva === 'monotributo' ? '#fef9c3' : '#f1f5f9';
-
-      cont.innerHTML = `
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-            <div>
-              <div style="font-size: 16px; font-weight: 700; color: #0f172a;">${data.nombre || 'Sin nombre registrado'}</div>
-              <div style="font-size: 12px; color: #64748b; font-family: monospace; margin-top: 3px;">CUIT: ${data.cuit}</div>
-            </div>
-            <span style="font-size: 12px; font-weight: 700; color: ${condColor}; background: ${condBg}; padding: 4px 10px; border-radius: 999px;">
-              ${data.condicion_iva_desc || data.condicion_iva}
-            </span>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12.5px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
-            <div>
-              <span style="color: #64748b;">Tipo de Persona:</span>
-              <strong style="color: #1e293b; display: block; margin-top: 2px;">${data.tipoPersona || 'N/A'}</strong>
-            </div>
-            <div>
-              <span style="color: #64748b;">Estado de la Clave:</span>
-              <strong style="color: #16a34a; display: block; margin-top: 2px;">${data.estadoClave || 'ACTIVO'}</strong>
-            </div>
-            <div style="grid-column: 1 / -1;">
-              <span style="color: #64748b;">Domicilio Fiscal Registrado en ARCA:</span>
-              <div style="color: #1e293b; font-weight: 500; margin-top: 2px;">${data.domicilio || 'No especificado'}</div>
-            </div>
-          </div>
-
-          <div style="margin-top: 12px; font-size: 11.5px; color: #15803d; display: flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>✓ Datos oficiales obtenidos en tiempo real de ARCA (ws_sr_constancia_inscripcion) sin facturar ni alterar registros.</span>
-          </div>
-        </div>
-      `;
-    }
-  } catch (err) {
-    cont.innerHTML = `
-      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 14px; color: #991b1b; font-size: 13px;">
-        Error de conexión al consultar el servidor: ${err.message}
-      </div>
-    `;
-  } finally {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.innerHTML = `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <span>Consultar Padrón ARCA</span>
-    `;
-  }
-}
-</script>
-<style>
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-</style>
-
 <%- include('partials/footer') %>
