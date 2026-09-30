@@ -75,6 +75,10 @@ router.get('/', async (req, res) => {
   });
 });
 
+router.get('/test-conexion', (req, res) => {
+  res.redirect('/configuracion');
+});
+
 router.post('/test-conexion', async (req, res, next) => {
   try {
     const { rows } = await pool.query('SELECT * FROM configuracion_arca WHERE id = 1');
