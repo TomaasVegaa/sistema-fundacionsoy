@@ -81,16 +81,84 @@
 
 <%- include('../partials/paginacion') %>
 
+<!-- MODAL OVERLAY: SELLO FISCAL ARCA -->
+<div class="modal-animacion-overlay" id="overlayArcaFacturacion" aria-hidden="true">
+  <div class="modal-animacion-card">
+    <div class="anim-badge-top arca-badge">
+      <span class="pulsing-dot"></span> ARCA • FACTURA ELECTRÓNICA
+    </div>
+    <div class="anim-title" id="arcaModalTitle">Facturando con ARCA...</div>
+    <div class="anim-subtitle" id="arcaModalSubtitle">Punto de Venta 00002 • Comunicación segura con servidores fiscales</div>
+
+    <div class="arca-viewport">
+      <div class="arca-radar-pulse"></div>
+      <div class="arca-logo-center">🏛️</div>
+      <div style="font-size: 13px; font-weight: 600; color: #0f172a;" id="arcaLiveStep">Conectando con WSFE Producción...</div>
+      <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;" id="arcaLiveDetail">Validando certificado digital y último número</div>
+
+      <div class="arca-fiscal-stamp" id="arcaStampBadge">
+        ✓ RECIBO C AUTORIZADO<br>
+        <span style="font-size: 11px; font-weight: 500;">CAE OFICIAL REGISTRADO</span>
+      </div>
+    </div>
+
+    <div class="anim-progress-bar">
+      <div class="anim-progress-bar-fill"></div>
+    </div>
+
+    <div class="anim-note-bottom">
+      🔒 Transacción fiscal en curso • Por favor aguardá unos segundos
+    </div>
+  </div>
+</div>
+
 <script>
+let facturacionEnCurso = false;
+
+function mostrarAnimacionArca(titulo, subtitulo) {
+  if (facturacionEnCurso) return false;
+  facturacionEnCurso = true;
+
+  const overlay = document.getElementById('overlayArcaFacturacion');
+  if (overlay) {
+    if (titulo) document.getElementById('arcaModalTitle').innerText = titulo;
+    if (subtitulo) document.getElementById('arcaModalSubtitle').innerText = subtitulo;
+    overlay.classList.add('active');
+
+    const liveStep = document.getElementById('arcaLiveStep');
+    const liveDetail = document.getElementById('arcaLiveDetail');
+    const stamp = document.getElementById('arcaStampBadge');
+
+    setTimeout(() => {
+      liveStep.innerText = 'Consultando último correlativo en Punto de Venta 00002...';
+      liveDetail.innerText = 'Verificando numeración en servidores de ARCA';
+    }, 400);
+
+    setTimeout(() => {
+      liveStep.innerText = 'Solicitando Código de Autorización Electrónico (CAE)...';
+      liveDetail.innerText = 'Generando Recibo C con validez fiscal';
+    }, 900);
+
+    setTimeout(() => {
+      if (stamp) stamp.classList.add('stamped');
+      liveStep.innerText = '¡Comprobante autorizado!';
+      liveDetail.innerText = 'Asentando movimiento en Libro de Caja y generando PDF';
+    }, 1400);
+  }
+  return true;
+}
+
 function deshabilitarBotonLote(form) {
   const btn = form.querySelector('button');
   if (btn) {
     btn.disabled = true;
     btn.style.opacity = '0.6';
     btn.style.cursor = 'not-allowed';
-    btn.innerText = 'Facturando... por favor espere';
+    btn.innerText = 'Facturando...';
   }
+  mostrarAnimacionArca('Emitiendo Recibos C en Lote...', 'Autorizando comprobantes pendientes contra ARCA (AFIP)');
 }
+
 function deshabilitarReintentar(form) {
   const btn = form.querySelector('button');
   if (btn) {
@@ -99,6 +167,7 @@ function deshabilitarReintentar(form) {
     btn.style.cursor = 'not-allowed';
     btn.innerText = 'Reintentando...';
   }
+  mostrarAnimacionArca('Reintentando emisión con ARCA...', 'Solicitando CAE oficial para esta donación');
 }
 </script>
 

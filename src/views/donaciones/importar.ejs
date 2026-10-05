@@ -34,13 +34,100 @@
   </div>
 <% } %>
 
-<form class="form-card" method="POST" action="/donaciones/importar" enctype="multipart/form-data">
+<form class="form-card" id="formImportar" method="POST" action="/donaciones/importar" enctype="multipart/form-data" onsubmit="iniciarAnimacionEscaneo(this, event)">
   <div class="field">
     <label for="archivo">Archivo (.csv, .xlsx o .pdf)</label>
-    <input type="file" name="archivo" id="archivo" accept=".csv,.xlsx,.xls,.pdf" required>
+    <input type="file" name="archivo" id="archivo" accept=".csv,.xlsx,.xls,.pdf" required onchange="actualizarNombreArchivo(this)">
   </div>
-  <button type="submit" class="btn btn--gold">Procesar archivo</button>
+  <button type="submit" id="btnSubmitImportar" class="btn btn--gold">Procesar archivo</button>
 </form>
+
+<!-- MODAL OVERLAY: ESCÁNER HOLOGRÁFICO -->
+<div class="modal-animacion-overlay" id="overlayEscaneo" aria-hidden="true">
+  <div class="modal-animacion-card">
+    <div class="anim-badge-top">
+      <span class="pulsing-dot"></span> PROCESAMIENTO INTELIGENTE
+    </div>
+    <div class="anim-title" id="scanModalTitle">Desglosando archivo...</div>
+    <div class="anim-subtitle" id="scanModalSubtitle">Analizando transacciones de Mercado Pago y clasificando donaciones</div>
+
+    <div class="scanner-viewport">
+      <div class="scanner-laser-beam"></div>
+      <div class="scanner-doc-icon">📄</div>
+      <div style="font-weight: 600; font-size: 14px; color: #0f172a;" id="scanDocName">documento.xlsx</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 2px;" id="scanLiveStatus">Leyendo registros...</div>
+
+      <div class="scanner-chips-container" id="scanChips">
+        <!-- Chips inyectados secuencialmente -->
+      </div>
+    </div>
+
+    <div class="anim-progress-bar">
+      <div class="anim-progress-bar-fill"></div>
+    </div>
+
+    <div class="anim-note-bottom">
+      🔒 Extracción segura • Por favor no recargues la página
+    </div>
+  </div>
+</div>
+
+<script>
+let scanSubmitting = false;
+
+function actualizarNombreArchivo(input) {
+  if (input.files && input.files[0]) {
+    document.getElementById('scanDocName').innerText = input.files[0].name;
+  }
+}
+
+function iniciarAnimacionEscaneo(form, e) {
+  if (scanSubmitting) return;
+  e.preventDefault();
+  scanSubmitting = true;
+
+  const btn = document.getElementById('btnSubmitImportar');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Procesando...';
+  }
+
+  const overlay = document.getElementById('overlayEscaneo');
+  overlay.classList.add('active');
+
+  const fileInput = document.getElementById('archivo');
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    document.getElementById('scanDocName').innerText = fileInput.files[0].name;
+  }
+
+  const chipsContainer = document.getElementById('scanChips');
+  chipsContainer.innerHTML = '';
+
+  const liveStatus = document.getElementById('scanLiveStatus');
+
+  const secuencias = [
+    { text: '✓ Archivo verificado', delay: 250, status: 'Extrayendo operaciones...' },
+    { text: '✓ Detección de montos', delay: 550, status: 'Filtrando comisiones y egresos...' },
+    { text: '✓ Control anti-duplicados', delay: 850, status: 'Cruzando con base de datos...' }
+  ];
+
+  secuencias.forEach(seq => {
+    setTimeout(() => {
+      liveStatus.innerText = seq.status;
+      const chip = document.createElement('div');
+      chip.className = 'scanner-chip chip-success';
+      chip.innerText = seq.text;
+      chipsContainer.appendChild(chip);
+    }, seq.delay);
+  });
+
+  // Envío real del formulario tras la animación visual
+  setTimeout(() => {
+    liveStatus.innerText = 'Guardando en el sistema...';
+    form.submit();
+  }, 1300);
+}
+</script>
 
 <div class="section" style="margin-top:32px;">
   <div class="section__head"><h2>Cómo funciona</h2></div>

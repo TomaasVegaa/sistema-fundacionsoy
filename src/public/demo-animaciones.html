@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorio de Animaciones — Fundación Soy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f8fafc;
+      --paper-line: #e2e8f0;
+      --paper-card: #ffffff;
+      --ink: #0f172a;
+      --ink-soft: #64748b;
+      --navy-deep: #0f172a;
+      --navy-mid: #1e293b;
+      --gold: #b45309;
+      --gold-soft: #fef3c7;
+      --sage: #059669;
+      --sage-soft: #d1fae5;
+      --sage-light: #ecfdf5;
+      --rust: #dc2626;
+      --rust-soft: #fee2e2;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+      --serif: 'Source Serif 4', Georgia, serif;
+      --mono: 'IBM Plex Mono', monospace;
+      --radius: 12px;
+      --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f1f5f9;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 30px 20px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .badge-test {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--navy-deep);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-test span {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: 32px;
+      color: var(--navy-deep);
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--ink-soft);
+      max-width: 650px;
+      margin: 0 auto;
+      font-size: 15.5px;
+    }
+
+    /* Switcher de Conceptos */
+    .tabs-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: var(--paper-card);
+      border: 1px solid var(--paper-line);
+      color: var(--ink-soft);
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .tab-btn:hover {
+      border-color: #cbd5e1;
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: var(--navy-deep);
+      color: #ffffff;
+      border-color: var(--navy-deep);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+
+    /* Barra de Control de Simulación */
+    .control-bar {
+      background: var(--paper-card);
+      border: 1px solid var(--paper-line);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .control-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn--primary {
+      background: #0284c7;
+      color: white;
+    }
+    .btn--primary:hover { background: #0369a1; transform: translateY(-1px); }
+
+    .btn--arca {
+      background: #059669;
+      color: white;
+    }
+    .btn--arca:hover { background: #047857; transform: translateY(-1px); }
+
+    .btn--reset {
+      background: #f1f5f9;
+      color: var(--ink-soft);
+    }
+    .btn--reset:hover { background: #e2e8f0; color: var(--ink); }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Contenedor del Escenario */
+    .stage {
+      background: var(--paper-card);
+      border: 1px solid var(--paper-line);
+      border-radius: 16px;
+      min-height: 480px;
+      box-shadow: var(--shadow-lg);
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .concept-panel {
+      display: none;
+    }
+    .concept-panel.active {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       OPCIÓN 1: DATA SCANNER & SELLO FISCAL (FinTech Moderno)
+       ============================================================ */
+    .scanner-box {
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scan-laser {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #0284c7, #38bdf8, transparent);
+      box-shadow: 0 0 15px 3px rgba(56, 189, 248, 0.7);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scanning .scan-laser {
+      opacity: 1;
+      animation: laserSweep 1.8s ease-in-out infinite;
+    }
+
+    @keyframes laserSweep {
+      0% { top: 0%; }
+      50% { top: 96%; }
+      100% { top: 0%; }
+    }
+
+    .file-icon-mock {
+      width: 64px;
+      height: 64px;
+      background: #e0f2fe;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0284c7;
+      font-size: 28px;
+      margin-bottom: 12px;
+      transition: transform 0.3s;
+    }
+
+    .scanning .file-icon-mock {
+      transform: scale(1.05);
+      animation: pulseFile 1.5s infinite;
+    }
+
+    @keyframes pulseFile {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
+      50% { box-shadow: 0 0 0 16px rgba(2, 132, 199, 0); }
+    }
+
+    .chips-stream {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 600px;
+      margin-top: 15px;
+      justify-content: center;
+    }
+
+    .data-chip {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-family: var(--mono);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transform: scale(0.8) translateY(10px);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .data-chip.pop {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .data-chip.valid { border-color: #86efac; color: #166534; background: #f0fdf4; }
+    .data-chip.excluded { border-color: #fca5a5; color: #991b1b; background: #fef2f2; text-decoration: line-through; }
+
+    /* Sello ARCA */
+    .stamp-container {
+      margin-top: 20px;
+      padding: 24px;
+      background: #ffffff;
+      border: 1px solid var(--paper-line);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .stamp-badge {
+      border: 3px solid #059669;
+      color: #059669;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0;
+      transform: scale(2) rotate(-15deg);
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .stamp-badge.stamped {
+      opacity: 1;
+      transform: scale(1) rotate(-4deg);
+      box-shadow: 0 0 12px rgba(5, 150, 105, 0.25);
+    }
+
+    /* ============================================================
+       OPCIÓN 2: STEPPER ANALÍTICO & PROGRESO EN VIVO
+       ============================================================ */
+    .stepper-card {
+      background: #ffffff;
+      border: 1px solid var(--paper-line);
+      border-radius: 14px;
+      padding: 25px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f1f5f9;
+      position: relative;
+    }
+    .step-item:last-child { border-bottom: none; }
+
+    .step-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: var(--ink-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .step-item.active .step-icon-wrap {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 0 0 4px #e0f2fe;
+    }
+
+    .step-item.done .step-icon-wrap {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 0 0 0 4px #d1fae5;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: 14.5px;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      font-size: 12.5px;
+      color: var(--ink-soft);
+    }
+
+    .step-metric {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 13px;
+      color: #0284c7;
+      margin-left: auto;
+      background: #f0f9ff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .step-item.done .step-metric { opacity: 1; }
+
+    /* Barra de progreso global */
+    .progress-bar-wrap {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #059669);
+      transition: width 0.4s ease;
+    }
+
+    /* ============================================================
+       OPCIÓN 3: IMPRESORA CONTABLE / TICKET WATERFALL
+       ============================================================ */
+    .printer-machine {
+      background: #1e293b;
+      border-radius: 14px 14px 4px 4px;
+      padding: 16px 20px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .printer-slot {
+      height: 8px;
+      background: #090d16;
+      border-radius: 4px;
+      margin-top: 10px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .paper-tray {
+      background: #f8fafc;
+      border: 1px solid var(--paper-line);
+      border-top: none;
+      min-height: 280px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .receipt-item {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-top: 3px dashed #94a3b8;
+      width: 320px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border-radius: 0 0 6px 6px;
+      animation: slideOutPaper 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      font-size: 13px;
+    }
+
+    @keyframes slideOutPaper {
+      0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-family: var(--mono);
+      font-size: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink-soft);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .receipt-cae {
+      background: #f0fdf4;
+      color: #15803d;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* Resumen descriptivo de cada opción */
+    .concept-desc {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 25px;
+      font-size: 13.5px;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .concept-desc strong { color: var(--ink); }
+    .concept-desc ul { margin-left: 20px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge-test"><span></span> LABORATORIO DE PROTOTIPADO LOCAL</div>
+    <h1>Propuestas de Animación e Interactividad</h1>
+    <p class="subtitle">
+      Probá en vivo cómo se vería la pantalla al subir el archivo (desglosando datos de Mercado Pago) y al emitir los Recibos C con ARCA. Nada de esto está subido a producción.
+    </p>
+  </header>
+
+  <!-- Pestañas para elegir la propuesta -->
+  <div class="tabs-wrapper">
+    <button class="tab-btn active" onclick="switchConcept(1)">
+      ✨ Opción 1: Escáner Holográfico & Sello ARCA
+    </button>
+    <button class="tab-btn" onclick="switchConcept(2)">
+      📊 Opción 2: Stepper Analítico en Tiempo Real
+    </button>
+    <button class="tab-btn" onclick="switchConcept(3)">
+      🧾 Opción 3: Impresora Fiscal & Cascada de Recibos
+    </button>
+  </div>
+
+  <!-- Barra de Acciones de Simulación -->
+  <div class="control-bar">
+    <div style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
+      Controles de Simulación:
+    </div>
+    <div class="control-buttons">
+      <button class="btn btn--primary" id="btnSimularSubida" onclick="triggerSubida()">
+        📂 1. Simular Subida y Desglose
+      </button>
+      <button class="btn btn--arca" id="btnSimularArca" onclick="triggerArca()">
+        🏛️ 2. Simular Emisión ARCA (Recibo C)
+      </button>
+      <button class="btn btn--reset" onclick="resetAll()">
+        🔄 Reiniciar
+      </button>
+    </div>
+  </div>
+
+  <!-- ESCENARIO -->
+  <div class="stage">
+
+    <!-- ================= OPCIÓN 1 ================= -->
+    <div class="concept-panel active" id="panel-1">
+      <div style="margin-bottom: 16px;">
+        <h3 style="font-size: 18px; color: var(--navy-deep); font-family: var(--serif);">Escáner Holográfico de Datos (FinTech)</h3>
+        <p style="font-size: 13px; color: var(--ink-soft);">El láser barre el documento mientras los chips de donaciones van brotando en pantalla.</p>
+      </div>
+
+      <div class="scanner-box" id="scanner1">
+        <div class="scan-laser"></div>
+        <div class="file-icon-mock">📄</div>
+        <div style="font-weight: 600; font-size: 14.5px;" id="scanStatus">Listo para importar settlement_v2...xlsx</div>
+        <div style="font-size: 12px; color: var(--ink-soft); margin-top: 3px;" id="scanSub">Hacé clic en "1. Simular Subida y Desglose" arriba</div>
+
+        <div class="chips-stream" id="chipsStream">
+          <!-- Chips inyectados por JS -->
+        </div>
+      </div>
+
+      <div class="stamp-container">
+        <div>
+          <div style="font-weight: 600; font-size: 14.5px;">Conexión WSFE con ARCA (Punto de Venta 00002)</div>
+          <div style="font-size: 12.5px; color: var(--ink-soft); margin-top: 2px;" id="arcaStatus1">En espera de autorización...</div>
+        </div>
+        <div class="stamp-badge" id="stamp1">
+          ✓ RECIBO C EMITIDO<br><span style="font-size:11px; font-weight:400;">CAE: 74123849102831</span>
+        </div>
+      </div>
+
+      <div class="concept-desc">
+        <strong>¿Por qué funciona bien esta opción?</strong>
+        <ul>
+          <li><strong>Impacto visual inmediato:</strong> El barrido láser le da una sensación futurista y de alta precisión tecnológica al momento de procesar el archivo.</li>
+          <li><strong>Transparencia contable:</strong> El usuario ve cómo cada donación entra como chip verde y los egresos (-$240k) se tachan en rojo de forma instantánea.</li>
+          <li><strong>El sello fiscal:</strong> El estampado del CAE con sonido/rebote genera una confirmación psicológica contundente de que el comprobante ya es legal en AFIP/ARCA.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ================= OPCIÓN 2 ================= -->
+    <div class="concept-panel" id="panel-2">
+      <div style="margin-bottom: 16px;">
+        <h3 style="font-size: 18px; color: var(--navy-deep); font-family: var(--serif);">Stepper Analítico Progresivo</h3>
+        <p style="font-size: 13px; color: var(--ink-soft);">Flujo sobrio, editorial y corporativo. Ideal para back-offices contables serios.</p>
+      </div>
+
+      <div class="stepper-card">
+        <div class="step-item" id="step2-1">
+          <div class="step-icon-wrap">1</div>
+          <div class="step-content">
+            <div class="step-title">Lectura y descompresión del archivo</div>
+            <div class="step-desc">Extrayendo hojas y encabezados de Mercado Pago...</div>
+          </div>
+          <div class="step-metric">28 filas leídas</div>
+        </div>
+
+        <div class="step-item" id="step2-2">
+          <div class="step-icon-wrap">2</div>
+          <div class="step-content">
+            <div class="step-title">Clasificación y filtro de seguridad contable</div>
+            <div class="step-desc">Separando donaciones reales de retiros y comisiones...</div>
+          </div>
+          <div class="step-metric">27 donaciones • 1 egreso excluido</div>
+        </div>
+
+        <div class="step-item" id="step2-3">
+          <div class="step-icon-wrap">3</div>
+          <div class="step-content">
+            <div class="step-title">Comunicación segura con ARCA (WSFE)</div>
+            <div class="step-desc" id="step2-desc-arca">Esperando orden de facturación...</div>
+          </div>
+          <div class="step-metric" id="step2-metric-arca">Pto. Venta 2</div>
+        </div>
+
+        <div class="step-item" id="step2-4">
+          <div class="step-icon-wrap">4</div>
+          <div class="step-content">
+            <div class="step-title">Generación de Recibos C & Asiento en Caja</div>
+            <div class="step-desc" id="step2-desc-final">Comprobantes listos para descarga en PDF</div>
+          </div>
+          <div class="step-metric" id="step2-metric-final">$ 655.000,00</div>
+        </div>
+
+        <div class="progress-bar-wrap">
+          <div class="progress-fill" id="progressFill2"></div>
+        </div>
+      </div>
+
+      <div class="concept-desc">
+        <strong>¿Por qué funciona bien esta opción?</strong>
+        <ul>
+          <li><strong>Elegancia y sobriedad:</strong> Se integra de manera 100% natural con el diseño "libro de caja" actual de la Fundación.</li>
+          <li><strong>Claridad paso a paso:</strong> Cada etapa muestra exactamente qué hace el sistema por detrás (descompresión, filtrado, consulta a ARCA).</li>
+          <li><strong>Cero distracciones:</strong> Perfecto para usuarios que buscan rapidez, métricas claras y sensación de control contable.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ================= OPCIÓN 3 ================= -->
+    <div class="concept-panel" id="panel-3">
+      <div style="margin-bottom: 16px;">
+        <h3 style="font-size: 18px; color: var(--navy-deep); font-family: var(--serif);">Impresora Fiscal & Cascada de Recibos</h3>
+        <p style="font-size: 13px; color: var(--ink-soft);">Súper entretenida y dinámica: los comprobantes van saliendo físicamente de la ranura.</p>
+      </div>
+
+      <div class="printer-machine">
+        <div>
+          <div style="font-size: 11px; color: #94a3b8; font-family: var(--mono); text-transform: uppercase;">Módulo de Facturación</div>
+          <div style="font-weight: 700; font-size: 15px; color: #ffffff;">CONTROLADOR FISCAL DIGITAL ARCA</div>
+        </div>
+        <div style="font-family: var(--mono); font-size: 12px; color: #38bdf8;" id="printerStatus">
+          ● EN LÍNEA
+        </div>
+      </div>
+      <div class="printer-slot"></div>
+
+      <div class="paper-tray" id="paperTray">
+        <div style="color: var(--ink-soft); font-size: 13px; margin-top: 40px;" id="emptyTrayMsg">
+          La bandeja de salida está vacía. Presioná los botones de simulación.
+        </div>
+      </div>
+
+      <div class="concept-desc">
+        <strong>¿Por qué funciona bien esta opción?</strong>
+        <ul>
+          <li><strong>Altamente entretenida:</strong> Ver cómo "se imprimen" y caen los recibos reales en cascada le saca una sonrisa al usuario y al cliente.</li>
+          <li><strong>Sensación táctil digital:</strong> Convierte un proceso abstracto de webservice en algo visualmente concreto y palpable.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentConcept = 1;
+  let isSimulating = false;
+
+  function switchConcept(n) {
+    currentConcept = n;
+    document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', idx + 1 === n);
+    });
+    document.querySelectorAll('.concept-panel').forEach((p, idx) => {
+      p.classList.toggle('active', idx + 1 === n);
+    });
+    resetAll();
+  }
+
+  function resetAll() {
+    isSimulating = false;
+    document.getElementById('btnSimularSubida').disabled = false;
+    document.getElementById('btnSimularArca').disabled = false;
+
+    // Reset Opción 1
+    const scanner = document.getElementById('scanner1');
+    scanner.classList.remove('scanning');
+    document.getElementById('scanStatus').innerText = 'Listo para importar settlement_v2...xlsx';
+    document.getElementById('scanSub').innerText = 'Hacé clic en "1. Simular Subida y Desglose" arriba';
+    document.getElementById('chipsStream').innerHTML = '';
+    document.getElementById('stamp1').classList.remove('stamped');
+    document.getElementById('arcaStatus1').innerText = 'En espera de autorización...';
+
+    // Reset Opción 2
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`step2-${i}`);
+      el.classList.remove('active', 'done');
+    }
+    document.getElementById('progressFill2').style.width = '0%';
+    document.getElementById('step2-desc-arca').innerText = 'Esperando orden de facturación...';
+    document.getElementById('step2-desc-final').innerText = 'Comprobantes listos para descarga en PDF';
+
+    // Reset Opción 3
+    const tray = document.getElementById('paperTray');
+    tray.innerHTML = '<div style="color: var(--ink-soft); font-size: 13px; margin-top: 40px;" id="emptyTrayMsg">La bandeja de salida está vacía. Presioná los botones de simulación.</div>';
+    document.getElementById('printerStatus').innerText = '● EN LÍNEA';
+  }
+
+  // SIMULACIÓN 1: SUBIDA Y DESGLOSE
+  async function triggerSubida() {
+    if (isSimulating) return;
+    isSimulating = true;
+    const btn = document.getElementById('btnSimularSubida');
+    btn.disabled = true;
+
+    if (currentConcept === 1) {
+      const scanner = document.getElementById('scanner1');
+      scanner.classList.add('scanning');
+      document.getElementById('scanStatus').innerText = 'Desglosando datos de Mercado Pago...';
+      document.getElementById('scanSub').innerText = 'Extrayendo transacciones del archivo Excel';
+
+      const chipsData = [
+        { text: '✓ Donación $ 10.000', type: 'valid' },
+        { text: '✓ Donación $ 20.000', type: 'valid' },
+        { text: '✓ Donación $ 50.000', type: 'valid' },
+        { text: '✗ Retiro -$ 240.000 (Excluido)', type: 'excluded' },
+        { text: '✓ Donación $ 10.000', type: 'valid' },
+        { text: '✓ Donación $ 20.000', type: 'valid' },
+        { text: '✓ Total a facturar: $ 655.000', type: 'valid' }
+      ];
+
+      const stream = document.getElementById('chipsStream');
+      stream.innerHTML = '';
+
+      for (let i = 0; i < chipsData.length; i++) {
+        await new Promise(r => setTimeout(r, 260));
+        const chip = document.createElement('div');
+        chip.className = `data-chip ${chipsData[i].type}`;
+        chip.innerText = chipsData[i].text;
+        stream.appendChild(chip);
+        requestAnimationFrame(() => chip.classList.add('pop'));
+      }
+
+      await new Promise(r => setTimeout(r, 400));
+      scanner.classList.remove('scanning');
+      document.getElementById('scanStatus').innerText = '✓ Desglose completado con éxito';
+      document.getElementById('scanSub').innerText = '27 donaciones listas para emitir ($655.000). Egreso de -$240k apartado.';
+
+    } else if (currentConcept === 2) {
+      const bar = document.getElementById('progressFill2');
+      const step1 = document.getElementById('step2-1');
+      const step2 = document.getElementById('step2-2');
+
+      step1.classList.add('active');
+      bar.style.width = '25%';
+      await new Promise(r => setTimeout(r, 600));
+      step1.classList.remove('active');
+      step1.classList.add('done');
+
+      step2.classList.add('active');
+      bar.style.width = '50%';
+      await new Promise(r => setTimeout(r, 700));
+      step2.classList.remove('active');
+      step2.classList.add('done');
+
+    } else if (currentConcept === 3) {
+      const tray = document.getElementById('paperTray');
+      tray.innerHTML = '';
+      document.getElementById('printerStatus').innerText = '● LEYENDO ARCHIVO...';
+
+      const items = [
+        { id: '180512984784', monto: '$ 10.000,00', titular: 'Consumidor Final' },
+        { id: '180356288072', monto: '$ 20.000,00', titular: 'Consumidor Final' }
+      ];
+
+      for (const item of items) {
+        await new Promise(r => setTimeout(r, 400));
+        const rec = document.createElement('div');
+        rec.className = 'receipt-item';
+        rec.innerHTML = `
+          <div class="receipt-header">
+            <span>TRANSACCIÓN DETECTADA</span>
+            <span>#${item.id}</span>
+          </div>
+          <div class="receipt-row"><span>Titular:</span><strong>${item.titular}</strong></div>
+          <div class="receipt-row"><span>Importe bruto:</span><strong>${item.monto}</strong></div>
+        `;
+        tray.prepend(rec);
+      }
+      document.getElementById('printerStatus').innerText = '● LISTO PARA EMITIR';
+    }
+
+    btn.disabled = false;
+    isSimulating = false;
+  }
+
+  // SIMULACIÓN 2: EMISIÓN CON ARCA
+  async function triggerArca() {
+    if (isSimulating) return;
+    isSimulating = true;
+    const btn = document.getElementById('btnSimularArca');
+    btn.disabled = true;
+
+    if (currentConcept === 1) {
+      const arcaStatus = document.getElementById('arcaStatus1');
+      arcaStatus.innerText = 'Conectando con servidores de ARCA (wsfev1)...';
+      await new Promise(r => setTimeout(r, 600));
+      arcaStatus.innerText = 'Solicitando CAE para Recibo C #00002-00000001...';
+      await new Promise(r => setTimeout(r, 700));
+
+      const stamp = document.getElementById('stamp1');
+      stamp.classList.add('stamped');
+      arcaStatus.innerText = '✓ Autorizado legalmente por ARCA • Listo para descargar en PDF';
+
+    } else if (currentConcept === 2) {
+      const bar = document.getElementById('progressFill2');
+      const step3 = document.getElementById('step2-3');
+      const step4 = document.getElementById('step2-4');
+
+      step3.classList.add('active');
+      document.getElementById('step2-desc-arca').innerText = 'Emitiendo 27 comprobantes con CAE...';
+      bar.style.width = '75%';
+      await new Promise(r => setTimeout(r, 800));
+      step3.classList.remove('active');
+      step3.classList.add('done');
+      document.getElementById('step2-desc-arca').innerText = '✓ Todos los Recibos C autorizados por ARCA';
+
+      step4.classList.add('active');
+      bar.style.width = '100%';
+      await new Promise(r => setTimeout(r, 600));
+      step4.classList.remove('active');
+      step4.classList.add('done');
+      document.getElementById('step2-desc-final').innerText = '✓ $655.000 ingresados a caja sin duplicados';
+
+    } else if (currentConcept === 3) {
+      const tray = document.getElementById('paperTray');
+      document.getElementById('printerStatus').innerText = '● AUTORIZANDO CON ARCA...';
+      await new Promise(r => setTimeout(r, 500));
+
+      const rec = document.createElement('div');
+      rec.className = 'receipt-item';
+      rec.style.borderTop = '3px solid #059669';
+      rec.innerHTML = `
+        <div class="receipt-header" style="color: #059669;">
+          <span>RECIBO C OFICIAL</span>
+          <span>#00002-00000001</span>
+        </div>
+        <div class="receipt-row"><span>Emisor:</span><strong>FUNDACION SOI</strong></div>
+        <div class="receipt-row"><span>Concepto:</span><strong>Aportes y Donaciones</strong></div>
+        <div class="receipt-row"><span>Importe:</span><strong style="color:#059669;">$ 10.000,00</strong></div>
+        <div class="receipt-cae">✓ CAE AUTORIZADO: 74123849102831 (Vto: 15/10/2026)</div>
+      `;
+      tray.prepend(rec);
+      document.getElementById('printerStatus').innerText = '● COMPROBANTES EMITIDOS';
+    }
+
+    btn.disabled = false;
+    isSimulating = false;
+  }
+</script>
+
+</body>
+</html>
