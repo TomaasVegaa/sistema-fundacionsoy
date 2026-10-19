@@ -68,7 +68,17 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Error en login:', err);
-    res.render('login', { error: 'Error interno, intentá de nuevo.', activeNav: null });
+    res.render('login', { error: `Error interno (${err.message})`, activeNav: null });
+  }
+});
+
+router.get('/diagnostico-db', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT NOW() AS ahora, current_database() AS db');
+    const userCount = await pool.query('SELECT count(*) AS total_usuarios FROM usuarios');
+    res.json({ ok: true, now: rows[0].ahora, db: rows[0].db, usuarios: userCount.rows[0].total_usuarios });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message, code: err.code });
   }
 });
 
