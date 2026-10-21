@@ -69,6 +69,8 @@ async function emitirFacturaC(config, donacion, donante = null) {
     numero_formateado: resultado.numero_formateado,
     cae: resultado.cae,
     vencimiento_cae: resultado.vencimiento_cae,
+    concepto: resultado.concepto,
+    cbte_fch: resultado.cbte_fch,
   };
 }
 

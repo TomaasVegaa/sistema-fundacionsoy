@@ -85,14 +85,20 @@ async function ejecutarProcesarDonacion(donacionId) {
 
       await client.query('BEGIN');
 
+      const fechaFiscal = resultado.cbte_fch
+        ? new Date(`${resultado.cbte_fch.slice(0, 4)}-${resultado.cbte_fch.slice(4, 6)}-${resultado.cbte_fch.slice(6, 8)}T12:00:00-03:00`)
+        : new Date();
+      const conceptoFiscal = resultado.concepto || 1;
+
       const factura = await client.query(
         `INSERT INTO facturas
-          (cbte_tipo, punto_venta, numero_comprobante, cae, vencimiento_cae, monto, donacion_id, estado, ambiente, emitida_en)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,'emitida',$8, now())
+          (cbte_tipo, punto_venta, numero_comprobante, cae, vencimiento_cae, monto, donacion_id, estado, ambiente, emitida_en, concepto)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'emitida',$8, $9, $10)
          RETURNING id`,
         [
           resultado.cbte_tipo, resultado.punto_venta, resultado.numero_comprobante,
           resultado.cae, resultado.vencimiento_cae, donacion.monto, donacion.id, resultado.ambiente,
+          fechaFiscal, conceptoFiscal
         ]
       );
       const facturaId = factura.rows[0].id;
@@ -114,7 +120,8 @@ async function ejecutarProcesarDonacion(donacionId) {
             vencimiento_cae: resultado.vencimiento_cae,
             monto: donacion.monto,
             ambiente: resultado.ambiente,
-            emitida_en: new Date()
+            concepto: conceptoFiscal,
+            emitida_en: fechaFiscal
           },
           donacion,
           donante,

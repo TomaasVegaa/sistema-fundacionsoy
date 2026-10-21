@@ -163,7 +163,12 @@ async function generarFacturaPDF({ factura, donacion, donante, config }) {
     doc.fontSize(9.5).font('Helvetica')
        .text(`Punto de Venta: ${pad(factura.punto_venta, 5)}  Comp. Nro: ${pad(factura.numero_comprobante, 8)}`, pageW - margin - 250, 78, { width: 250, align: 'right' })
        .text(`Fecha de Emisión: ${formatDate(factura.emitida_en || new Date())}`, pageW - margin - 220, 93, { width: 220, align: 'right' })
-       .text('Concepto: Aportes y Donaciones', pageW - margin - 220, 108, { width: 220, align: 'right' });
+    const conceptoTexto = (factura.concepto === 2) ? 'Concepto: Servicios / Aportes' : 'Concepto: Aportes y Donaciones';
+    doc.text(conceptoTexto, pageW - margin - 220, 108, { width: 220, align: 'right' });
+    if (factura.concepto === 2) {
+      doc.fontSize(8).font('Helvetica')
+         .text(`Período: ${formatDate(factura.emitida_en)} al ${formatDate(factura.emitida_en)}  |  Vto: ${formatDate(factura.emitida_en)}`, pageW - margin - 250, 122, { width: 250, align: 'right' });
+    }
 
     // Linea separadora
     doc.lineWidth(0.5)

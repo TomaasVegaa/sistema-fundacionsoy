@@ -56,6 +56,7 @@ async function inicializarBaseDeDatos() {
       ALTER TABLE configuracion_arca ADD COLUMN IF NOT EXISTS clave_privada_content TEXT;
       ALTER TABLE configuracion_arca ADD COLUMN IF NOT EXISTS razon_social TEXT;
       ALTER TABLE configuracion_arca ADD COLUMN IF NOT EXISTS domicilio_comercial TEXT;
+      ALTER TABLE facturas ADD COLUMN IF NOT EXISTS concepto INTEGER DEFAULT 1;
     `);
 
     const secretsDir = path.resolve(__dirname, '../secrets');

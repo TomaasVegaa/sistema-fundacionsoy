@@ -24,7 +24,9 @@ router.get('/', async (req, res) => {
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   const { rows } = await pool.query(
-    `SELECT d.*, don.nombre AS donante_nombre, don.email AS donante_email, don.cuit_dni AS donante_cuit,
+    `SELECT d.*, 
+            to_char(d.fecha, 'YYYY-MM-DD') AS fecha_iso,
+            don.nombre AS donante_nombre, don.email AS donante_email, don.cuit_dni AS donante_cuit,
             f.pdf_url,
             (SELECT error_detalle FROM facturas WHERE donacion_id = d.id ORDER BY id DESC LIMIT 1) AS error_detalle
      FROM donaciones d
@@ -236,6 +238,43 @@ router.post('/procesar-lote', async (req, res, next) => {
     res.redirect(
       `/donaciones?procesado=1&total=${resultado.total}&ok=${resultado.exitosas}&error=${resultado.conError}`
     );
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/editar-fecha', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { nueva_fecha } = req.body;
+
+    if (!nueva_fecha || !/^\d{4}-\d{2}-\d{2}$/.test(nueva_fecha)) {
+      return res.redirect('/donaciones?error_fecha=1');
+    }
+
+    const { rows } = await pool.query('SELECT id, estado FROM donaciones WHERE id = $1', [id]);
+    if (rows.length === 0) {
+      return res.redirect('/donaciones');
+    }
+    if (rows[0].estado === 'facturada') {
+      return res.redirect('/donaciones?error_ya_facturada=1');
+    }
+
+    await pool.query('UPDATE donaciones SET fecha = $1 WHERE id = $2', [nueva_fecha, id]);
+    res.redirect('/donaciones?fecha_actualizada=1');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/facturar-individual', async (req, res, next) => {
+  try {
+    const resultado = await procesarDonacion(req.params.id);
+    if (!resultado || !resultado.ok) {
+      const msg = encodeURIComponent(resultado?.error || 'Error al autorizar con ARCA');
+      return res.redirect(`/donaciones?error_facturacion=${msg}`);
+    }
+    res.redirect('/donaciones?facturada_ok=1');
   } catch (err) {
     next(err);
   }

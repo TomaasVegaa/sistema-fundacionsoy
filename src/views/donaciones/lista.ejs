@@ -9,6 +9,26 @@
   <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
     Ya hay un lote de facturación ejecutándose en segundo plano. Por favor esperá unos segundos y refrescá la página.
   </div>
+<% } else if (filtros && filtros.fecha_actualizada) { %>
+  <div style="background: #eef8f3; border: 1px solid #c2e9d2; color: #1e5a3a; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    ✓ Fecha de facturación actualizada correctamente.
+  </div>
+<% } else if (filtros && filtros.facturada_ok) { %>
+  <div style="background: #eef8f3; border: 1px solid #c2e9d2; color: #1e5a3a; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    ✓ Factura autorizada y emitida con éxito en ARCA con CAE oficial.
+  </div>
+<% } else if (filtros && filtros.error_facturacion) { %>
+  <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    ⚠ ARCA no pudo autorizar el comprobante: <strong><%= decodeURIComponent(filtros.error_facturacion) %></strong>
+  </div>
+<% } else if (filtros && filtros.error_fecha) { %>
+  <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    ⚠ Formato de fecha inválido.
+  </div>
+<% } else if (filtros && filtros.error_ya_facturada) { %>
+  <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+    ⚠ No se puede modificar la fecha de una donación que ya fue facturada en ARCA.
+  </div>
 <% } %>
 
 <div class="page-head">
@@ -43,7 +63,19 @@
       <% } %>
       <% donaciones.forEach(d => { %>
         <tr>
-          <td><%= fecha(d.fecha) %></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span><%= fecha(d.fecha) %></span>
+              <% if (d.estado !== 'facturada') { %>
+                <button type="button" 
+                        onclick="abrirModalFecha('<%= d.id %>', '<%= d.fecha_iso || '' %>', '<%= (d.donante_nombre || 'Sin identificar').replace(/'/g, '\\\'') %>', '<%= moneda(d.monto) %>')" 
+                        style="background:none; border:none; cursor:pointer; font-size:12px; color:#0284c7; padding:2px 4px; border-radius:4px; opacity:0.85;" 
+                        title="Modificar fecha fiscal antes de facturar (hasta 10 días atrás)">
+                  ✏️
+                </button>
+              <% } %>
+            </div>
+          </td>
           <td>
             <div style="font-weight: 500;"><%= d.donante_nombre || 'Sin identificar' %></div>
             <% if (d.donante_cuit) { %>
@@ -70,6 +102,10 @@
             <% } else if (d.estado === 'error_facturacion') { %>
               <form method="POST" action="/donaciones/<%= d.id %>/reintentar" onsubmit="deshabilitarReintentar(this)" style="display:inline;">
                 <button type="submit" class="btn btn--ghost" style="padding:4px 9px; font-size:12px;">Reintentar</button>
+              </form>
+            <% } else { %>
+              <form method="POST" action="/donaciones/<%= d.id %>/facturar-individual" onsubmit="deshabilitarEmitirIndividual(this)" style="display:inline;">
+                <button type="submit" class="btn btn--ghost" style="padding:4px 9px; font-size:12px; color:#0f766e; border-color:#0f766e;" title="Emitir Factura C en ARCA">Emitir</button>
               </form>
             <% } %>
           </td>
@@ -109,6 +145,39 @@
     <div class="anim-note-bottom">
       🔒 Transacción fiscal en curso • Por favor aguardá unos segundos
     </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR FECHA DE FACTURACIÓN -->
+<div class="modal-animacion-overlay" id="modalEditarFecha" aria-hidden="true">
+  <div class="modal-animacion-card" style="max-width: 440px; text-align: left; padding: 26px 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Modificar Fecha de Facturación</h3>
+      <button type="button" onclick="cerrarModalFecha()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
+    </div>
+    
+    <p style="font-size: 13px; color: #475569; margin: 0 0 16px 0; line-height: 1.4;">
+      Donación de <strong id="modalDonanteNombre" style="color:#0f172a;"></strong> por <strong id="modalDonanteMonto" style="color:#0f766e;"></strong>
+    </p>
+
+    <form id="formEditarFecha" method="POST" action="">
+      <label style="display:block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">
+        Fecha de emisión fiscal (ARCA):
+      </label>
+      <input type="date" name="nueva_fecha" id="inputNuevaFecha" required
+             style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; margin-bottom: 12px; font-family: inherit;">
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #334155; margin-bottom: 20px; line-height: 1.45;">
+        <span style="font-weight: 600; color: #0284c7;">ℹ️ Normativa de ARCA:</span><br>
+        • Podés facturar con fecha de hasta <strong>10 días hacia atrás</strong>.<br>
+        • Si tiene entre 6 y 10 días de antigüedad, el sistema la autoriza automáticamente como <em>Servicios</em> para cumplir con los plazos de ARCA sin error.
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="cerrarModalFecha()" class="btn btn--ghost" style="padding: 7px 14px; font-size: 13px;">Cancelar</button>
+        <button type="submit" class="btn btn--gold" style="padding: 7px 18px; font-size: 13px;">Guardar Fecha</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -169,6 +238,56 @@ function deshabilitarReintentar(form) {
   }
   mostrarAnimacionArca('Reintentando emisión con ARCA...', 'Solicitando CAE oficial para esta donación');
 }
+
+function deshabilitarEmitirIndividual(form) {
+  const btn = form.querySelector('button');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerText = 'Emitiendo...';
+  }
+  mostrarAnimacionArca('Emitiendo Recibo C en ARCA...', 'Solicitando Código de Autorización Electrónico (CAE)');
+}
+
+function abrirModalFecha(id, fechaIso, nombre, monto) {
+  const modal = document.getElementById('modalEditarFecha');
+  const form = document.getElementById('formEditarFecha');
+  const input = document.getElementById('inputNuevaFecha');
+  const txtNombre = document.getElementById('modalDonanteNombre');
+  const txtMonto = document.getElementById('modalDonanteMonto');
+
+  form.action = '/donaciones/' + id + '/editar-fecha';
+  txtNombre.textContent = nombre;
+  txtMonto.textContent = monto;
+  input.value = fechaIso || new Date().toISOString().slice(0, 10);
+
+  // Límites permitidos: hasta hoy y hasta 10 días hacia atrás
+  const hoy = new Date();
+  const maxIso = hoy.toISOString().slice(0, 10);
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() - 10);
+  const minIso = minDate.toISOString().slice(0, 10);
+
+  input.max = maxIso;
+  input.min = minIso;
+
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalFecha() {
+  const modal = document.getElementById('modalEditarFecha');
+  modal.classList.remove('active');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+// Cerrar modal al hacer clic en el fondo oscuro
+document.getElementById('modalEditarFecha').addEventListener('click', function(e) {
+  if (e.target === this) {
+    cerrarModalFecha();
+  }
+});
 </script>
 
 <%- include('../partials/footer') %>

@@ -197,14 +197,44 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
   // 2) Concepto 1 (Productos/Donaciones) no permite comprobantes con más de 5 días de antigüedad.
   const hoyArg = getFechaHoyArgentina();
   let cbteFch = hoyArg;
+  let concepto = comprobante.concepto || 1;
+
   if (comprobante.fecha) {
     const fTransaccion = formatDateYYYYMMDD(comprobante.fecha);
-    if (fTransaccion >= hoyArg) {
+
+    // Calcular diferencia en días corridos entre hoy y la fecha de transacción
+    const parseYYYYMMDD = (str) => new Date(Date.UTC(
+      parseInt(str.slice(0, 4), 10),
+      parseInt(str.slice(4, 6), 10) - 1,
+      parseInt(str.slice(6, 8), 10)
+    ));
+
+    const dateHoy = parseYYYYMMDD(hoyArg);
+    const dateTx = parseYYYYMMDD(fTransaccion);
+    const diffDias = Math.round((dateHoy.getTime() - dateTx.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDias >= 0 && diffDias <= 5) {
+      // 0 a 5 días hacia atrás: Concepto 1 (Productos/Bienes)
       cbteFch = fTransaccion;
+      concepto = comprobante.concepto || 1;
+    } else if (diffDias > 5 && diffDias <= 10) {
+      // 6 a 10 días hacia atrás: ARCA exige Concepto 2 (Servicios) para permitir la ventana de 10 días
+      cbteFch = fTransaccion;
+      concepto = 2; // Auto-promover a Servicios para cumplir con la normativa de ARCA sin error
+    } else if (diffDias < 0 && diffDias >= -5) {
+      // Hasta 5 días hacia adelante: permitido por ARCA
+      cbteFch = fTransaccion;
+      concepto = comprobante.concepto || 1;
+    } else {
+      // Si la fecha tiene más de 10 días de antigüedad, ARCA la rechazaría con error [10016].
+      // Se emite con fecha de hoy para garantizar autorización sin rechazo.
+      console.warn(`[ARCA WSFE] Fecha ${fTransaccion} excede el límite de 10 días de ARCA (${diffDias} días). Se emite con fecha de hoy (${hoyArg}).`);
+      cbteFch = hoyArg;
+      concepto = comprobante.concepto || 1;
     }
   }
+
   const impTotal = Number(comprobante.monto).toFixed(2);
-  const concepto = comprobante.concepto || 1; // 1 = Productos / General
 
   // Resolucion General 5616: Condicion Frente al IVA del receptor
   // 5: Consumidor Final (DocTipo 99 o 96)
@@ -224,11 +254,12 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
 
   let fechasServicioXml = '';
   if (concepto === 2 || concepto === 3) {
-    // Si es servicio, requiere periodo de servicio y fecha de vencimiento para el pago
+    // Si es servicio, requiere periodo de servicio y fecha de vencimiento para el pago (FchVtoPago >= CbteFch)
+    const fchVtoPago = cbteFch > hoyArg ? cbteFch : hoyArg;
     fechasServicioXml = `
       <FchServDesde>${cbteFch}</FchServDesde>
       <FchServHasta>${cbteFch}</FchServHasta>
-      <FchVtoPago>${cbteFch}</FchVtoPago>`;
+      <FchVtoPago>${fchVtoPago}</FchVtoPago>`;
   }
 
   // Para Factura C (CbteTipo 11):
@@ -335,6 +366,8 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
     vencimiento_cae: vtoFormateado,
     numero_formateado: `${pad(emisor.puntoVenta, 5)}-${pad(numero, 8)}`,
     observaciones,
+    concepto,
+    cbte_fch: cbteFch,
   };
 }
 
