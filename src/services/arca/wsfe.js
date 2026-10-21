@@ -234,6 +234,13 @@ async function solicitarCAE({ ambiente, auth, emisor, comprobante }) {
     }
   }
 
+  // Salvaguarda de Correlatividad Cronológica con ARCA:
+  // La fecha del nuevo comprobante NUNCA puede ser anterior a la fecha de la última factura autorizada en el punto de venta.
+  if (comprobante.fechaMinima && cbteFch < comprobante.fechaMinima) {
+    console.warn(`[ARCA WSFE] Fecha solicitada (${cbteFch}) es cronológicamente anterior a la última factura emitida (${comprobante.fechaMinima}). Se ajusta automáticamente a ${comprobante.fechaMinima} para evitar rechazo [10016] de ARCA.`);
+    cbteFch = comprobante.fechaMinima;
+  }
+
   const impTotal = Number(comprobante.monto).toFixed(2);
 
   // Resolucion General 5616: Condicion Frente al IVA del receptor

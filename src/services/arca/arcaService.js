@@ -57,6 +57,7 @@ async function emitirFacturaC(config, donacion, donante = null) {
     docNro,
     fecha: donacion.fecha,
     condicionIvaId,
+    fechaMinima: donacion.fechaMinima,
   };
 
   const resultado = await wsfe.solicitarCAE({ ambiente, auth, emisor, comprobante });

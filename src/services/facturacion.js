@@ -81,6 +81,18 @@ async function ejecutarProcesarDonacion(donacionId) {
     }
 
     try {
+      // Consultar fecha de la última factura emitida para garantizar correlatividad cronológica con ARCA
+      const { rows: ultRows } = await client.query(
+        `SELECT to_char(emitida_en, 'YYYYMMDD') AS ultima_fecha 
+         FROM facturas 
+         WHERE punto_venta = $1 AND estado = 'emitida' 
+         ORDER BY numero_comprobante DESC LIMIT 1`,
+        [config?.punto_venta || 2]
+      );
+      if (ultRows.length > 0 && ultRows[0].ultima_fecha) {
+        donacion.fechaMinima = ultRows[0].ultima_fecha;
+      }
+
       const resultado = await arcaService.emitirFacturaC(config, donacion, donante);
 
       await client.query('BEGIN');
